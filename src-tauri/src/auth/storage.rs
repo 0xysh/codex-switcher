@@ -5,7 +5,48 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use crate::types::{AccountsStore, StoredAccount};
+use crate::auth::secret_store::{delete_account_secret, load_account_secret, save_account_secret};
+use crate::types::{AccountsStore, AuthData, StoredAccount};
+
+const KEYCHAIN_PLACEHOLDER: &str = "__stored_in_keychain__";
+
+fn is_placeholder_value(value: &str) -> bool {
+    value.is_empty() || value == KEYCHAIN_PLACEHOLDER
+}
+
+fn auth_data_has_real_secrets(auth_data: &AuthData) -> bool {
+    match auth_data {
+        AuthData::ApiKey { key } => !is_placeholder_value(key),
+        AuthData::ChatGPT {
+            id_token,
+            access_token,
+            refresh_token,
+            ..
+        } => {
+            !is_placeholder_value(id_token)
+                && !is_placeholder_value(access_token)
+                && !is_placeholder_value(refresh_token)
+        }
+    }
+}
+
+fn redact_auth_data(auth_data: &mut AuthData) {
+    match auth_data {
+        AuthData::ApiKey { key } => {
+            *key = KEYCHAIN_PLACEHOLDER.to_string();
+        }
+        AuthData::ChatGPT {
+            id_token,
+            access_token,
+            refresh_token,
+            ..
+        } => {
+            *id_token = KEYCHAIN_PLACEHOLDER.to_string();
+            *access_token = KEYCHAIN_PLACEHOLDER.to_string();
+            *refresh_token = KEYCHAIN_PLACEHOLDER.to_string();
+        }
+    }
+}
 
 /// Get the path to the codex-switcher config directory
 pub fn get_config_dir() -> Result<PathBuf> {
@@ -29,8 +70,38 @@ pub fn load_accounts() -> Result<AccountsStore> {
     let content = fs::read_to_string(&path)
         .with_context(|| format!("Failed to read accounts file: {}", path.display()))?;
 
-    let store: AccountsStore = serde_json::from_str(&content)
+    let mut store: AccountsStore = serde_json::from_str(&content)
         .with_context(|| format!("Failed to parse accounts file: {}", path.display()))?;
+
+    let mut migrated_any_account = false;
+
+    for account in &mut store.accounts {
+        match load_account_secret(&account.id)? {
+            Some(auth_data) => {
+                account.auth_data = auth_data;
+            }
+            None => {
+                if auth_data_has_real_secrets(&account.auth_data) {
+                    save_account_secret(&account.id, &account.auth_data).with_context(|| {
+                        format!(
+                            "Failed to migrate account '{}' credentials into keychain",
+                            account.name
+                        )
+                    })?;
+                    migrated_any_account = true;
+                } else {
+                    anyhow::bail!(
+                        "Missing credentials in keychain for account '{}'. Re-add this account to restore access.",
+                        account.name
+                    );
+                }
+            }
+        }
+    }
+
+    if migrated_any_account {
+        save_accounts(&store)?;
+    }
 
     Ok(store)
 }
@@ -39,14 +110,19 @@ pub fn load_accounts() -> Result<AccountsStore> {
 pub fn save_accounts(store: &AccountsStore) -> Result<()> {
     let path = get_accounts_file()?;
 
+    let mut redacted_store = store.clone();
+    for account in &mut redacted_store.accounts {
+        redact_auth_data(&mut account.auth_data);
+    }
+
     // Ensure the config directory exists
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .with_context(|| format!("Failed to create config directory: {}", parent.display()))?;
     }
 
-    let content =
-        serde_json::to_string_pretty(store).context("Failed to serialize accounts store")?;
+    let content = serde_json::to_string_pretty(&redacted_store)
+        .context("Failed to serialize accounts store")?;
 
     fs::write(&path, content)
         .with_context(|| format!("Failed to write accounts file: {}", path.display()))?;
@@ -71,6 +147,13 @@ pub fn add_account(account: StoredAccount) -> Result<StoredAccount> {
         anyhow::bail!("An account with name '{}' already exists", account.name);
     }
 
+    save_account_secret(&account.id, &account.auth_data).with_context(|| {
+        format!(
+            "Failed to securely store credentials for account '{}'",
+            account.name
+        )
+    })?;
+
     let account_clone = account.clone();
     store.accounts.push(account);
 
@@ -79,7 +162,11 @@ pub fn add_account(account: StoredAccount) -> Result<StoredAccount> {
         store.active_account_id = Some(account_clone.id.clone());
     }
 
-    save_accounts(&store)?;
+    if let Err(err) = save_accounts(&store) {
+        let _ = delete_account_secret(&account_clone.id);
+        return Err(err);
+    }
+
     Ok(account_clone)
 }
 
@@ -100,6 +187,13 @@ pub fn remove_account(account_id: &str) -> Result<()> {
     }
 
     save_accounts(&store)?;
+
+    if let Err(err) = delete_account_secret(account_id) {
+        eprintln!(
+            "[Security] Warning: failed to delete keychain credentials for account {account_id}: {err}"
+        );
+    }
+
     Ok(())
 }
 

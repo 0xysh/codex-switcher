@@ -15,6 +15,7 @@
 - **Quick Switching** – Switch between accounts with a single click
 - **Usage Monitoring** – View real-time usage for both 5-hour and weekly limits
 - **Dual Login Mode** – OAuth authentication or import existing `auth.json` files
+- **Secure Credential Storage** – Account secrets are stored in the OS keychain; `accounts.json` keeps only redacted metadata
 
 ## Installation
 
@@ -42,6 +43,11 @@ pnpm tauri build
 ```
 
 The built application will be in `src-tauri/target/release/bundle/`.
+
+## Security Notes
+
+- Credentials are stored in the OS keychain (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux).
+- Existing plaintext credentials in `~/.codex-switcher/accounts.json` are migrated automatically on first load and then redacted on disk.
 
 ## Disclaimer
 
