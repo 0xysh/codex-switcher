@@ -53,6 +53,8 @@ it("uses the same controls layout for active and inactive cards without switch C
     expect(within(card).queryByRole("button", { name: /toggle account visibility/i })).not.toBeInTheDocument();
     expect(within(card).queryByText(/switch now/i)).not.toBeInTheDocument();
     expect(within(card).queryByText(/active now/i)).not.toBeInTheDocument();
+    expect(within(card).queryByText(/last updated/i)).not.toBeInTheDocument();
+    expect(within(card).getByText(/updated never/i)).toBeInTheDocument();
   });
 });
 

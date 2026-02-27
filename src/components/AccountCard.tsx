@@ -244,16 +244,16 @@ export function AccountCard({
             <IconShieldCheck className="h-3.5 w-3.5" />
             {authModeDisplay}
           </span>
+
+          <span className="chip ml-auto min-w-max" title={lastRefresh ? lastRefresh.toLocaleString() : "No usage refresh yet"}>
+            <IconClock className="h-3.5 w-3.5" />
+            Updated {formatLastRefresh(lastRefresh)}
+          </span>
         </div>
       </header>
 
       <div className="mb-4 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-3">
         <UsageBar usage={account.usage} loading={isRefreshing || account.usageLoading} />
-      </div>
-
-      <div className="mb-4 flex items-center justify-between gap-2 text-xs text-muted">
-        <span className="inline-flex items-center gap-2"><IconClock className="h-3.5 w-3.5" />Last updated</span>
-        <span className="mono-data">{formatLastRefresh(lastRefresh)}</span>
       </div>
 
       <footer className="flex items-center gap-2">
