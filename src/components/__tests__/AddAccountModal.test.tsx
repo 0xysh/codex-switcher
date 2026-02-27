@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
+import { openUrlMock } from "../../test/mocks/tauri";
 import { AddAccountModal } from "../AddAccountModal";
 
 it("has accessible close button and labeled account name input", () => {
@@ -52,4 +53,53 @@ it("does not stay stuck in oauth pending state after cancellation", async () => 
   expect(onCancelOAuth).toHaveBeenCalledTimes(1);
   expect(screen.queryByText(/waiting for browser login…/i)).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: /import account/i })).toBeEnabled();
+});
+
+it("continues oauth completion when browser opener stays pending", async () => {
+  openUrlMock.mockImplementationOnce(() => new Promise<undefined>(() => {}));
+
+  const onClose = vi.fn();
+  const onCompleteOAuth = vi.fn(async () => ({}));
+
+  const user = userEvent.setup();
+  render(
+    <AddAccountModal
+      isOpen
+      onClose={onClose}
+      onImportFile={vi.fn(async () => {})}
+      onStartOAuth={vi.fn(async () => ({ auth_url: "https://example.com" }))}
+      onCompleteOAuth={onCompleteOAuth}
+      onCancelOAuth={vi.fn(async () => {})}
+    />,
+  );
+
+  await user.type(screen.getByLabelText(/account name/i), "Work Account");
+  await user.click(screen.getByRole("button", { name: /login with chatgpt/i }));
+
+  await waitFor(() => expect(onCompleteOAuth).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+});
+
+it("ignores duplicate oauth starts while a login attempt is already in flight", async () => {
+  const onStartOAuth = vi.fn(() => new Promise<{ auth_url: string }>(() => {}));
+
+  const user = userEvent.setup();
+  render(
+    <AddAccountModal
+      isOpen
+      onClose={vi.fn()}
+      onImportFile={vi.fn(async () => {})}
+      onStartOAuth={onStartOAuth}
+      onCompleteOAuth={vi.fn(async () => ({}))}
+      onCancelOAuth={vi.fn(async () => {})}
+    />,
+  );
+
+  await user.type(screen.getByLabelText(/account name/i), "Work Account");
+  const loginButton = screen.getByRole("button", { name: /login with chatgpt/i });
+
+  await user.click(loginButton);
+  await user.click(loginButton);
+
+  expect(onStartOAuth).toHaveBeenCalledTimes(1);
 });

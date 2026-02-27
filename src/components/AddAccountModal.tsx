@@ -36,6 +36,8 @@ export function AddAccountModal({
   const [error, setError] = useState<string | null>(null);
   const [oauthPending, setOauthPending] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const oauthAttemptRef = useRef(0);
+  const oauthInFlightRef = useRef(false);
 
   const isPrimaryDisabled = loading || (activeTab === "oauth" && oauthPending);
 
@@ -57,6 +59,9 @@ export function AddAccountModal({
   };
 
   const requestClose = useCallback(() => {
+    oauthAttemptRef.current += 1;
+    oauthInFlightRef.current = false;
+
     if (oauthPending) {
       void onCancelOAuth().catch((err) => {
         console.error("Failed to cancel login:", getErrorMessage(err));
@@ -69,6 +74,9 @@ export function AddAccountModal({
   const handleTabChange = useCallback(
     (nextTab: AddAccountTab) => {
       if (nextTab === "import" && oauthPending) {
+        oauthAttemptRef.current += 1;
+        oauthInFlightRef.current = false;
+
         void onCancelOAuth().catch((err) => {
           console.error("Failed to cancel login:", getErrorMessage(err));
         });
@@ -85,10 +93,18 @@ export function AddAccountModal({
   useDialogFocusTrap({ isOpen, containerRef: dialogRef, onRequestClose: requestClose });
 
   const handleOAuthLogin = async () => {
+    if (oauthInFlightRef.current) {
+      return;
+    }
+
     if (!name.trim()) {
       setError("Please enter an account name.");
       return;
     }
+
+    oauthInFlightRef.current = true;
+    const oauthAttempt = oauthAttemptRef.current + 1;
+    oauthAttemptRef.current = oauthAttempt;
 
     let oauthStarted = false;
 
@@ -97,15 +113,31 @@ export function AddAccountModal({
       setError(null);
 
       const info = await onStartOAuth(name.trim());
+
+      if (oauthAttemptRef.current !== oauthAttempt) {
+        return;
+      }
+
       oauthStarted = true;
       setOauthPending(true);
       setLoading(false);
 
-      await openUrl(info.auth_url);
+      void openUrl(info.auth_url).catch((openErr) => {
+        console.error("Failed to open browser:", getErrorMessage(openErr));
+      });
+
       await onCompleteOAuth();
+
+      if (oauthAttemptRef.current !== oauthAttempt) {
+        return;
+      }
 
       requestClose();
     } catch (err) {
+      if (oauthAttemptRef.current !== oauthAttempt) {
+        return;
+      }
+
       if (oauthStarted) {
         void onCancelOAuth().catch((cancelErr) => {
           console.error("Failed to cancel login:", getErrorMessage(cancelErr));
@@ -114,6 +146,10 @@ export function AddAccountModal({
       setError(getErrorMessage(err));
       setLoading(false);
       setOauthPending(false);
+    } finally {
+      if (oauthAttemptRef.current === oauthAttempt) {
+        oauthInFlightRef.current = false;
+      }
     }
   };
 
