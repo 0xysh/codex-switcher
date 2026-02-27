@@ -36,6 +36,31 @@ pub fn get_accounts_file() -> Result<PathBuf> {
     Ok(get_config_dir()?.join("accounts.json"))
 }
 
+/// Get the path to the session snapshots directory
+pub fn get_snapshots_dir() -> Result<PathBuf> {
+    Ok(get_config_dir()?.join("snapshots"))
+}
+
+/// Ensure snapshots directory exists with restrictive permissions
+pub fn ensure_snapshots_dir() -> Result<PathBuf> {
+    let path = get_snapshots_dir()?;
+    fs::create_dir_all(&path)
+        .with_context(|| format!("Failed to create snapshots directory: {}", path.display()))?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).with_context(|| {
+            format!(
+                "Failed to set permissions on snapshots directory: {}",
+                path.display()
+            )
+        })?;
+    }
+
+    Ok(path)
+}
+
 /// Load the accounts store from disk
 pub fn load_accounts() -> Result<AccountsStore> {
     let path = get_accounts_file()?;

@@ -4,9 +4,13 @@ use std::fs;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 
-use crate::types::{AuthData, AuthDotJson, StoredAccount, TokenData};
+use crate::auth::storage::{ensure_snapshots_dir, get_snapshots_dir};
+use crate::types::{
+    AuthData, AuthDotJson, AuthMode, CurrentAuthStatus, CurrentAuthSummary, StoredAccount,
+    TokenData,
+};
 
 const KEYCHAIN_PLACEHOLDER: &str = "__stored_in_keychain__";
 
@@ -182,6 +186,190 @@ pub fn read_current_auth() -> Result<Option<AuthDotJson>> {
         .with_context(|| format!("Failed to parse auth.json: {}", path.display()))?;
 
     Ok(Some(auth))
+}
+
+fn to_iso_utc(time: std::time::SystemTime) -> Option<DateTime<Utc>> {
+    Some(DateTime::<Utc>::from(time))
+}
+
+pub(crate) fn build_snapshot_filename(now: DateTime<Utc>, collision_index: u32) -> String {
+    let timestamp = now.format("%Y%m%dT%H%M%SZ");
+    if collision_index == 0 {
+        format!("auth-snapshot-{timestamp}.json")
+    } else {
+        format!("auth-snapshot-{timestamp}-{collision_index}.json")
+    }
+}
+
+pub(crate) fn derive_summary_from_auth(
+    auth: &AuthDotJson,
+    auth_file_path: String,
+    snapshots_dir_path: String,
+    last_modified_at: Option<DateTime<Utc>>,
+) -> CurrentAuthSummary {
+    if auth
+        .openai_api_key
+        .as_deref()
+        .is_some_and(|value| !value.is_empty())
+    {
+        return CurrentAuthSummary {
+            status: CurrentAuthStatus::Ready,
+            auth_mode: Some(AuthMode::ApiKey),
+            email: None,
+            plan_type: None,
+            auth_file_path,
+            snapshots_dir_path,
+            last_modified_at,
+            message: None,
+        };
+    }
+
+    if let Some(tokens) = &auth.tokens {
+        let (email, plan_type) = parse_id_token_claims(&tokens.id_token);
+        return CurrentAuthSummary {
+            status: CurrentAuthStatus::Ready,
+            auth_mode: Some(AuthMode::ChatGPT),
+            email,
+            plan_type,
+            auth_file_path,
+            snapshots_dir_path,
+            last_modified_at,
+            message: None,
+        };
+    }
+
+    CurrentAuthSummary {
+        status: CurrentAuthStatus::Invalid,
+        auth_mode: None,
+        email: None,
+        plan_type: None,
+        auth_file_path,
+        snapshots_dir_path,
+        last_modified_at,
+        message: Some("auth.json contains neither API key nor tokens".to_string()),
+    }
+}
+
+pub fn build_current_auth_summary() -> Result<CurrentAuthSummary> {
+    let auth_path = get_codex_auth_file()?;
+    let snapshots_dir = get_snapshots_dir()?;
+    let auth_file_path = auth_path.display().to_string();
+    let snapshots_dir_path = snapshots_dir.display().to_string();
+
+    if !auth_path.exists() {
+        return Ok(CurrentAuthSummary {
+            status: CurrentAuthStatus::Missing,
+            auth_mode: None,
+            email: None,
+            plan_type: None,
+            auth_file_path,
+            snapshots_dir_path,
+            last_modified_at: None,
+            message: Some("No active Codex session file was found".to_string()),
+        });
+    }
+
+    let last_modified_at = fs::metadata(&auth_path)
+        .ok()
+        .and_then(|metadata| metadata.modified().ok())
+        .and_then(to_iso_utc);
+
+    let content = match fs::read_to_string(&auth_path) {
+        Ok(content) => content,
+        Err(err) => {
+            return Ok(CurrentAuthSummary {
+                status: CurrentAuthStatus::Error,
+                auth_mode: None,
+                email: None,
+                plan_type: None,
+                auth_file_path,
+                snapshots_dir_path,
+                last_modified_at,
+                message: Some(format!("Failed to read auth.json: {err}")),
+            });
+        }
+    };
+
+    let auth: AuthDotJson = match serde_json::from_str(&content) {
+        Ok(parsed) => parsed,
+        Err(err) => {
+            return Ok(CurrentAuthSummary {
+                status: CurrentAuthStatus::Invalid,
+                auth_mode: None,
+                email: None,
+                plan_type: None,
+                auth_file_path,
+                snapshots_dir_path,
+                last_modified_at,
+                message: Some(format!("Failed to parse auth.json: {err}")),
+            });
+        }
+    };
+
+    Ok(derive_summary_from_auth(
+        &auth,
+        auth_file_path,
+        snapshots_dir_path,
+        last_modified_at,
+    ))
+}
+
+pub fn create_auth_snapshot_file() -> Result<String> {
+    let auth_path = get_codex_auth_file()?;
+    let auth_content = fs::read_to_string(&auth_path)
+        .with_context(|| format!("Failed to read auth.json: {}", auth_path.display()))?;
+
+    serde_json::from_str::<AuthDotJson>(&auth_content)
+        .with_context(|| format!("Failed to parse auth.json: {}", auth_path.display()))?;
+
+    let snapshots_dir = ensure_snapshots_dir()?;
+    let now = Utc::now();
+
+    for collision_index in 0..1000 {
+        let filename = build_snapshot_filename(now, collision_index);
+        let snapshot_path = snapshots_dir.join(filename);
+
+        match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&snapshot_path)
+        {
+            Ok(mut file) => {
+                use std::io::Write;
+                file.write_all(auth_content.as_bytes()).with_context(|| {
+                    format!("Failed to write snapshot file: {}", snapshot_path.display())
+                })?;
+
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    fs::set_permissions(&snapshot_path, fs::Permissions::from_mode(0o600))
+                        .with_context(|| {
+                            format!(
+                                "Failed to set permissions on snapshot file: {}",
+                                snapshot_path.display()
+                            )
+                        })?;
+                }
+
+                return Ok(snapshot_path.display().to_string());
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(err) => {
+                return Err(err).with_context(|| {
+                    format!(
+                        "Failed to create snapshot file: {}",
+                        snapshot_path.display()
+                    )
+                });
+            }
+        }
+    }
+
+    anyhow::bail!(
+        "Failed to create unique snapshot filename in {}",
+        snapshots_dir.display()
+    )
 }
 
 /// Check if there is an active Codex login

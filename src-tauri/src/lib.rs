@@ -6,9 +6,10 @@ pub mod commands;
 pub mod types;
 
 use commands::{
-    add_account_from_file, cancel_login, check_codex_processes, complete_login, delete_account,
-    get_active_account_info, get_usage, list_accounts, refresh_all_accounts_usage, rename_account,
-    start_login, switch_account,
+    add_account_from_file, cancel_login, check_codex_processes, complete_login,
+    create_auth_snapshot, delete_account, get_active_account_info, get_current_auth_summary,
+    get_usage, list_accounts, refresh_all_accounts_usage, rename_account, start_login,
+    switch_account,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -33,6 +34,9 @@ pub fn run() {
             refresh_all_accounts_usage,
             // Process detection
             check_codex_processes,
+            // Session snapshot manager
+            get_current_auth_summary,
+            create_auth_snapshot,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
