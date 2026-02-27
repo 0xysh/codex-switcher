@@ -123,5 +123,5 @@ it("rejects untrusted oauth URLs before browser launch", async () => {
   await user.click(screen.getByRole("button", { name: /login with chatgpt/i }));
 
   expect(onCompleteOAuth).not.toHaveBeenCalled();
-  expect(await screen.findByText(/login configuration was invalid\. please retry\./i)).toBeInTheDocument();
+  expect(await screen.findByText(/invalid oauth url from backend/i)).toBeInTheDocument();
 });

@@ -15,19 +15,6 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function toUserSafeOAuthError(error: unknown): string {
-  const message = getErrorMessage(error);
-
-  if (message.includes("already exists")) return "An account with this name already exists. Choose a different name.";
-  if (message.includes("OAuth login timed out")) return "Login timed out. Please try again.";
-  if (message.includes("No pending OAuth login")) return "Login session expired. Please start the login flow again.";
-  if (message.includes("OAuth login cancelled")) return "Login was cancelled.";
-  if (message.includes("Invalid OAuth URL from backend")) return "Login configuration was invalid. Please retry.";
-  if (message.includes("Failed to write auth.json")) return "Unable to write ~/.codex/auth.json. Check permissions and try again.";
-
-  return "Unable to complete login. Please try again.";
-}
-
 function isTrustedOAuthUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
@@ -200,7 +187,7 @@ export function AddAccountModal({
           console.error("Failed to cancel login.", getErrorMessage(cancelErr));
         });
       }
-      setError(toUserSafeOAuthError(err));
+      setError(getErrorMessage(err));
       setLoading(false);
       setOauthPendingState(false);
     } finally {
@@ -254,7 +241,7 @@ export function AddAccountModal({
       await onImportFile(filePath.trim(), name.trim());
       requestClose();
     } catch (err) {
-      setError(toUserSafeOAuthError(err));
+      setError(getErrorMessage(err));
       setLoading(false);
     }
   };
