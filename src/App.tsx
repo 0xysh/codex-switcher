@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAccounts } from "./hooks/useAccounts";
+import { useUiPreferences } from "./hooks/useUiPreferences";
 import { AccountCard, AddAccountModal } from "./components";
 import { LiveRegion } from "./components/ui/LiveRegion";
 import type { CodexProcessInfo } from "./types";
@@ -28,20 +29,8 @@ function App() {
   const [processInfo, setProcessInfo] = useState<CodexProcessInfo | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
-  const [maskedAccounts, setMaskedAccounts] = useState<Set<string>>(new Set());
   const [announcement, setAnnouncement] = useState<string | null>(null);
-
-  const toggleMask = (accountId: string) => {
-    setMaskedAccounts((prev) => {
-      const next = new Set(prev);
-      if (next.has(accountId)) {
-        next.delete(accountId);
-      } else {
-        next.add(accountId);
-      }
-      return next;
-    });
-  };
+  const { maskedAccountIdSet, toggleMaskedAccountId } = useUiPreferences();
 
   const checkProcesses = useCallback(async () => {
     try {
@@ -226,8 +215,8 @@ function App() {
                   onRename={(newName) => renameAccount(activeAccount.id, newName)}
                   switching={switchingId === activeAccount.id}
                   switchDisabled={hasRunningProcesses ?? false}
-                  masked={maskedAccounts.has(activeAccount.id)}
-                  onToggleMask={() => toggleMask(activeAccount.id)}
+                  masked={maskedAccountIdSet.has(activeAccount.id)}
+                  onToggleMask={() => toggleMaskedAccountId(activeAccount.id)}
                 />
               </section>
             )}
@@ -249,8 +238,8 @@ function App() {
                       onRename={(newName) => renameAccount(account.id, newName)}
                       switching={switchingId === account.id}
                       switchDisabled={hasRunningProcesses ?? false}
-                      masked={maskedAccounts.has(account.id)}
-                      onToggleMask={() => toggleMask(account.id)}
+                      masked={maskedAccountIdSet.has(account.id)}
+                      onToggleMask={() => toggleMaskedAccountId(account.id)}
                     />
                   ))}
                 </div>
