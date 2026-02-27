@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { open } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
+import { useDialogFocusTrap } from "../hooks/useDialogFocusTrap";
 import { Button, IconButton, IconCheck, IconKey, IconShieldCheck, IconX } from "./ui";
 
 function getErrorMessage(error: unknown): string {
@@ -55,7 +56,7 @@ export function AddAccountModal({
     setActiveTab("oauth");
   };
 
-  const requestClose = () => {
+  const requestClose = useCallback(() => {
     if (oauthPending) {
       void onCancelOAuth().catch((err) => {
         console.error("Failed to cancel login:", getErrorMessage(err));
@@ -63,65 +64,9 @@ export function AddAccountModal({
     }
     resetForm();
     onClose();
-  };
+  }, [oauthPending, onCancelOAuth, onClose]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
-
-    const getFocusableElements = () => {
-      const elements = Array.from(
-        dialog.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-
-      return elements.filter(
-        (element) => !element.hasAttribute("disabled") && element.getAttribute("aria-hidden") !== "true",
-      );
-    };
-
-    const focusableElements = getFocusableElements();
-    focusableElements[0]?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        requestClose();
-        return;
-      }
-
-      if (event.key !== "Tab") {
-        return;
-      }
-
-      const focusable = getFocusableElements();
-      if (focusable.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const activeElement = document.activeElement;
-
-      if (event.shiftKey && activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, oauthPending, onCancelOAuth, onClose]);
+  useDialogFocusTrap({ isOpen, containerRef: dialogRef, onRequestClose: requestClose });
 
   const handleOAuthLogin = async () => {
     if (!name.trim()) {

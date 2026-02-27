@@ -4,14 +4,24 @@ This document defines frontend ownership boundaries and quality checks for Codex
 
 ## Frontend Boundaries
 
-- `src/App.tsx`: app shell, high-level state wiring, global announcements, page sections.
-- `src/hooks/useAccounts.ts`: all Tauri `invoke` orchestration for account/usage workflows.
+- `src/App.tsx`: composition root only (high-level wiring, global overlays, and feature assembly).
+- `src/features/workbench/*`: account workbench feature logic (selectors, hooks, section components).
+- `src/hooks/useAccounts.ts`: Tauri `invoke` orchestration for account/usage workflows.
 - `src/hooks/useUiPreferences.ts`: non-sensitive local preference state only.
-- `src/components/`: feature components (`AccountCard`, `AddAccountModal`, `UsageBar`).
-- `src/components/ui/`: reusable primitives (`Button`, `IconButton`, `LiveRegion`).
-- `src/styles/tokens.css`: global UI tokens and reduced-motion safety defaults.
+- `src/hooks/useTheme.ts`: theme preference + resolved theme synchronization.
+- `src/hooks/useDialogFocusTrap.ts`: shared dialog focus-trap and keyboard containment behavior.
+- `src/components/*`: reusable domain components (`AccountCard`, `AddAccountModal`, `UsageBar`, dialogs).
+- `src/components/ui/*`: reusable primitives (`Button`, `IconButton`, `LiveRegion`, icon set).
+- `src/styles/tokens.css`: global design tokens, theme vars, and reduced-motion defaults.
 
 Do not move command/business logic into presentational components.
+
+## Scalability Rules
+
+- Extract reusable behavior into hooks/selectors before duplicating logic.
+- Split files when they cross complexity budgets from `docs/engineering-standards.md`.
+- Keep section-level UI in feature components, not in `App.tsx`.
+- Keep component props explicit and typed; avoid implicit object bags.
 
 ## Accessibility Contract
 
@@ -20,6 +30,7 @@ All new/changed UI must satisfy:
 - Icon-only controls expose `aria-label`.
 - Inputs have associated labels (`htmlFor` + `id`) and meaningful `name` attributes.
 - Keyboard interaction works for all controls and destructive actions.
+- Dialogs trap focus, close on `Escape`, and restore keyboard-safe navigation.
 - Async status/error messages are announced with polite live regions.
 - `focus-visible` ring is present on interactive controls.
 - Motion respects `prefers-reduced-motion`.
@@ -41,8 +52,9 @@ All new/changed UI must satisfy:
 
 ## PR Checklist (UI-Focused)
 
-- [ ] Behavior change has tests (including at least one negative path when async).
-- [ ] No placeholder TODOs, no temporary hacks.
+- [ ] Behavior change has tests (including at least one negative async path when applicable).
+- [ ] No placeholder TODOs, temporary hacks, or hidden feature flags.
+- [ ] No duplicated behavioral logic across dialogs/sections.
 - [ ] No `transition-all` on newly added UI.
 - [ ] No secrets or auth payloads introduced in frontend logs/state persistence.
 - [ ] `pnpm run check:ui` passes locally.

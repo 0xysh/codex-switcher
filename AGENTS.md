@@ -15,6 +15,7 @@ Scope: whole repository unless a deeper AGENTS.md is added later.
 ## Repository Map
 
 - `src/`: React frontend.
+- `src/features/`: feature-scoped selectors/hooks/section components.
 - `src/components/`: UI components.
 - `src/hooks/`: stateful hooks and Tauri interaction wrappers.
 - `src/types/`: frontend types matching Rust serde payloads.
@@ -23,6 +24,8 @@ Scope: whole repository unless a deeper AGENTS.md is added later.
 - `src-tauri/src/auth/`: account storage, switching, OAuth, keychain logic.
 - `src-tauri/src/api/`: remote usage API client code.
 - `.github/workflows/build.yml`: CI/release pipeline reference.
+- `docs/README.md`: documentation index and update policy.
+- `docs/engineering-standards.md`: architecture and maintainability standards.
 
 ## Cursor / Copilot Rules
 
@@ -98,6 +101,21 @@ Single-test guidance:
 - Maintain existing formatting style: double quotes, semicolons, 2-space indentation.
 - Keep Tailwind class usage consistent with existing utility-first approach.
 
+## Frontend Scalability Standards
+
+- Treat `src/App.tsx` as composition root only. It should wire feature modules, not own large section markup and business rules.
+- Place feature-specific orchestration in `src/features/<feature>/` as:
+  - `selectors.ts` for pure derivations,
+  - `hooks/` for stateful/reusable behavior,
+  - `components/` for section UI.
+- Reuse shared behavior through hooks (for example dialog focus trap, hotkeys, filtering). Do not duplicate behavioral logic across components.
+- Follow complexity budgets from `docs/engineering-standards.md`:
+  - Component file target <= 220 lines, hard limit 320.
+  - Hook/selector file target <= 180 lines, hard limit 260.
+  - Function target <= 45 lines unless a clear justification is documented.
+- If a file exceeds a hard limit, refactor before adding more behavior.
+- Keep extraction refactors behavior-preserving and covered by tests.
+
 Import ordering convention:
 
 1. React/runtime imports.
@@ -152,15 +170,23 @@ Backend API contract rules:
 ## Change and Review Expectations
 
 - Make minimal, scoped changes that follow existing module boundaries.
-- Update docs when behavior, commands, or security posture changes.
+- Update docs when behavior, commands, security posture, or architecture rules change.
 - Run relevant checks locally before handing off.
 - Include exact commands run and outcomes in your handoff summary.
 - Follow existing commit style (conventional prefix like `fix:`, `feat:`, `chore:`).
+
+## Documentation Governance
+
+- Use `docs/README.md` as the canonical docs index.
+- Keep `AGENTS.md`, `docs/ui-ux-architecture.md`, and `docs/engineering-standards.md` aligned.
+- When introducing a new persistent workflow or architectural rule, update all affected docs in the same change.
+- Prefer short, enforceable rules over broad guidance; include exact paths and commands whenever possible.
 
 ## Agent Handoff Checklist
 
 - Code builds (`pnpm build` and/or `cargo check`) for touched areas.
 - Any new command is documented here and/or in `README.md`.
+- Architecture-impacting changes are documented in `docs/engineering-standards.md` and `docs/ui-ux-architecture.md`.
 - Type changes are mirrored across Rust and TypeScript boundaries.
 - Security-sensitive paths were reviewed for token leakage.
 - No unrelated refactors or formatting churn in untouched modules.

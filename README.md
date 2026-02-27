@@ -44,6 +44,14 @@ pnpm tauri build
 
 The built application will be in `src-tauri/target/release/bundle/`.
 
+For macOS app-only output (without DMG), use:
+
+```bash
+pnpm tauri build --bundles app
+```
+
+This outputs `src-tauri/target/release/bundle/macos/Codex Switcher.app`.
+
 ## Development Quality Checks
 
 ```bash
@@ -59,6 +67,13 @@ pnpm test -- src/components/__tests__/AccountCard.test.tsx
 # Full UI quality gate (types + tests + build)
 pnpm run check:ui
 ```
+
+## Architecture Docs
+
+- Docs index: `docs/README.md`
+- Engineering standards: `docs/engineering-standards.md`
+- UI architecture contract: `docs/ui-ux-architecture.md`
+- Agent operating guide: `AGENTS.md`
 
 ## Security Notes
 

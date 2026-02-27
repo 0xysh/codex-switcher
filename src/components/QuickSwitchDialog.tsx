@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 
+import { useDialogFocusTrap } from "../hooks/useDialogFocusTrap";
 import type { AccountWithUsage } from "../types";
 import {
   Button,
@@ -45,63 +46,7 @@ export function QuickSwitchDialog({
     });
   }, [accounts, query]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
-
-    const getFocusableElements = () => {
-      const elements = Array.from(
-        dialog.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-
-      return elements.filter(
-        (element) => !element.hasAttribute("disabled") && element.getAttribute("aria-hidden") !== "true",
-      );
-    };
-
-    const focusableElements = getFocusableElements();
-    focusableElements[0]?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-        return;
-      }
-
-      if (event.key !== "Tab") {
-        return;
-      }
-
-      const focusable = getFocusableElements();
-      if (focusable.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const activeElement = document.activeElement;
-
-      if (event.shiftKey && activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, onClose]);
+  useDialogFocusTrap({ isOpen, containerRef: dialogRef, onRequestClose: onClose });
 
   if (!isOpen) {
     return null;
