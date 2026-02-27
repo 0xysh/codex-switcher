@@ -67,21 +67,7 @@ export function AccountWorkspaceContent({
   }
 
   return (
-    <section className="reveal-rise space-y-3" aria-label="Accounts Workspace">
-      <div className="surface-panel rounded-2xl border-[var(--border-soft)] px-4 py-3 sm:px-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="section-title">Accounts Workspace</p>
-            <p className="mt-1 text-sm text-secondary text-pretty">
-              Review account health, usage windows, and reconnection needs in one scan.
-            </p>
-          </div>
-          <span className="chip chip-accent mono-data text-[11px]">
-            {accounts.length} {accounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
-          </span>
-        </div>
-      </div>
-
+    <section className="reveal-rise" aria-label="Accounts Workspace">
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {accounts.map((account) => (
           <AccountCard

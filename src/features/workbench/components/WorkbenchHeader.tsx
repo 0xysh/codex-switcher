@@ -134,25 +134,25 @@ export function WorkbenchHeader({
           </aside>
         </div>
 
-        <dl className="relative mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3.5 py-2.5 shadow-[var(--shadow-soft)]">
+        <dl className="relative mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
+          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
             <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Accounts Tracked</dt>
             <dd className="mt-1 text-base font-semibold text-[var(--text-primary)]">{formatAccountCount(summary.total)}</dd>
           </div>
 
-          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3.5 py-2.5 shadow-[var(--shadow-soft)]">
+          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
             <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Needs Attention</dt>
             <dd className={`mt-1 text-base font-semibold ${summary.attention > 0 ? "text-[var(--warning)]" : "text-[var(--success)]"}`}>
               {formatAttentionCount(summary.attention)}
             </dd>
           </div>
 
-          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3.5 py-2.5 shadow-[var(--shadow-soft)]">
+          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
             <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Process Status</dt>
             <dd className={`mt-1 text-sm font-semibold leading-tight ${processSummary.processClass}`}>{processSummary.processLabel}</dd>
           </div>
 
-          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3.5 py-2.5 shadow-[var(--shadow-soft)]">
+          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
             <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Blocking PIDs</dt>
             <dd className={`mono-data mt-1 truncate text-sm font-semibold ${processSummary.blockingClass}`} title={processSummary.blockingValue}>
               {processSummary.blockingValue}
