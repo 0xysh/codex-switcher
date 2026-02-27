@@ -8,6 +8,28 @@ use chrono::Utc;
 
 use crate::types::{AuthData, AuthDotJson, StoredAccount, TokenData};
 
+const KEYCHAIN_PLACEHOLDER: &str = "__stored_in_keychain__";
+
+fn is_placeholder_value(value: &str) -> bool {
+    value.is_empty() || value == KEYCHAIN_PLACEHOLDER
+}
+
+fn account_has_usable_credentials(account: &StoredAccount) -> bool {
+    match &account.auth_data {
+        AuthData::ApiKey { key } => !is_placeholder_value(key),
+        AuthData::ChatGPT {
+            id_token,
+            access_token,
+            refresh_token,
+            ..
+        } => {
+            !is_placeholder_value(id_token)
+                && !is_placeholder_value(access_token)
+                && !is_placeholder_value(refresh_token)
+        }
+    }
+}
+
 /// Get the official Codex home directory
 pub fn get_codex_home() -> Result<PathBuf> {
     // Check for CODEX_HOME environment variable first
@@ -26,6 +48,13 @@ pub fn get_codex_auth_file() -> Result<PathBuf> {
 
 /// Switch to a specific account by writing its credentials to ~/.codex/auth.json
 pub fn switch_to_account(account: &StoredAccount) -> Result<()> {
+    if !account_has_usable_credentials(account) {
+        anyhow::bail!(
+            "Missing credentials in keychain for account '{}'. Re-add this account to restore access.",
+            account.name
+        );
+    }
+
     let codex_home = get_codex_home()?;
 
     // Ensure the codex home directory exists
@@ -160,5 +189,42 @@ pub fn has_active_login() -> Result<bool> {
     match read_current_auth()? {
         Some(auth) => Ok(auth.openai_api_key.is_some() || auth.tokens.is_some()),
         None => Ok(false),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{account_has_usable_credentials, StoredAccount};
+
+    #[test]
+    fn rejects_placeholder_chatgpt_credentials() {
+        let mut account = StoredAccount::new_chatgpt(
+            "Work".to_string(),
+            Some("user@example.com".to_string()),
+            Some("plus".to_string()),
+            "__stored_in_keychain__".to_string(),
+            "__stored_in_keychain__".to_string(),
+            "__stored_in_keychain__".to_string(),
+            Some("acc-1".to_string()),
+        );
+        account.id = "acc-1".to_string();
+
+        assert!(!account_has_usable_credentials(&account));
+    }
+
+    #[test]
+    fn accepts_real_chatgpt_credentials() {
+        let mut account = StoredAccount::new_chatgpt(
+            "Work".to_string(),
+            Some("user@example.com".to_string()),
+            Some("plus".to_string()),
+            "id-real".to_string(),
+            "access-real".to_string(),
+            "refresh-real".to_string(),
+            Some("acc-2".to_string()),
+        );
+        account.id = "acc-2".to_string();
+
+        assert!(account_has_usable_credentials(&account));
     }
 }
