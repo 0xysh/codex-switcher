@@ -1,10 +1,10 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Syne:wght@500;600;700;800&display=swap");
 @import "tailwindcss";
 @import "./styles/tokens.css";
 
 body {
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
-  line-height: 1.45;
+  font-family: "Manrope", "Segoe UI", sans-serif;
+  line-height: 1.5;
   text-rendering: optimizeLegibility;
 }
 
@@ -12,8 +12,14 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+  font-family: "Syne", "Manrope", sans-serif;
+  letter-spacing: -0.015em;
   text-wrap: balance;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text-primary);
 }
 
 ::-webkit-scrollbar {

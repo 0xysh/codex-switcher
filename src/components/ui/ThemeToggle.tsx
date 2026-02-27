@@ -6,6 +6,7 @@ import { IconMonitor, IconMoon, IconSun } from "./icons";
 interface ThemeToggleProps {
   value: ThemePreference;
   onChange: (theme: ThemePreference) => void;
+  className?: string;
 }
 
 const OPTIONS: Array<{
@@ -18,7 +19,7 @@ const OPTIONS: Array<{
   { value: "system", label: "System", icon: IconMonitor },
 ];
 
-export function ThemeToggle({ value, onChange }: ThemeToggleProps) {
+export function ThemeToggle({ value, onChange, className }: ThemeToggleProps) {
   const selectedIndex = OPTIONS.findIndex((option) => option.value === value);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -35,7 +36,7 @@ export function ThemeToggle({ value, onChange }: ThemeToggleProps) {
 
   return (
     <div
-      className="inline-flex items-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] p-1"
+      className={`inline-grid w-full grid-cols-3 items-stretch gap-1 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface-elevated)] p-1 shadow-[var(--shadow-soft)] ${className ?? ""}`}
       role="radiogroup"
       aria-label="Theme mode"
       onKeyDown={handleKeyDown}
@@ -52,14 +53,14 @@ export function ThemeToggle({ value, onChange }: ThemeToggleProps) {
             aria-checked={active}
             aria-label={option.label}
             onClick={() => onChange(option.value)}
-            className={`inline-flex h-11 min-w-11 items-center justify-center rounded-lg px-2 text-xs font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent-secondary)] ${
+            className={`inline-flex h-11 w-full touch-manipulation items-center justify-center gap-1.5 rounded-lg px-2 text-[11px] font-semibold transition-[background-color,color,border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent-secondary)] sm:min-w-[88px] sm:text-xs ${
               active
-                ? "bg-[var(--accent-soft)] text-[var(--accent-primary)]"
-                : "text-[var(--text-muted)] hover:bg-[var(--bg-surface-elevated)] hover:text-[var(--text-primary)]"
+                ? "border border-transparent bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-[0_8px_18px_rgb(37_99_235_/_.24)]"
+                : "border border-transparent text-[var(--text-muted)] hover:border-[var(--border-soft)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
             }`}
           >
             <Icon className="h-4 w-4" />
-            <span className="ml-1 hidden xl:inline">{option.label}</span>
+            <span>{option.label}</span>
           </button>
         );
       })}

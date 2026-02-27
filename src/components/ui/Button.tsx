@@ -11,13 +11,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary:
-    "bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white hover:brightness-110 border border-transparent shadow-[0_10px_24px_rgb(37_99_235_/_.22)]",
+    "bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white hover:brightness-110 border border-transparent shadow-[0_10px_24px_rgb(37_99_235_/_.22)] hover:shadow-[0_14px_30px_rgb(37_99_235_/_.3)]",
   secondary:
     "bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-soft)] hover:border-[var(--border-strong)]",
   ghost:
     "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-surface-elevated)] border border-transparent",
   danger:
-    "bg-[var(--danger)] text-white hover:brightness-110 border border-transparent shadow-[0_10px_24px_rgb(220_38_38_/_.24)]",
+    "bg-[var(--danger)] text-white hover:brightness-110 border border-transparent shadow-[0_10px_24px_rgb(220_38_38_/_.24)] hover:shadow-[0_14px_30px_rgb(220_38_38_/_.32)]",
 };
 
 const SIZE_CLASS: Record<ButtonSize, string> = {
@@ -37,7 +37,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const composedClassName = [
-    "inline-flex touch-manipulation items-center justify-center gap-2 rounded-xl font-semibold transition-[background-color,border-color,color,opacity,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent-secondary)] disabled:cursor-not-allowed disabled:opacity-60",
+    "inline-flex touch-manipulation items-center justify-center gap-2 rounded-xl font-semibold transition-[background-color,border-color,color,opacity,transform,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent-secondary)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60",
     VARIANT_CLASS[variant],
     SIZE_CLASS[size],
     className,

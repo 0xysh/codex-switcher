@@ -58,7 +58,7 @@ export function ProcessStatusPanel({ processInfo }: ProcessStatusPanelProps) {
 
 export function RecentActivityPanel({ activity }: RecentActivityPanelProps) {
   return (
-    <section className="surface-panel p-5">
+    <section className="surface-panel border-[var(--border-strong)] p-5">
       <p className="section-title">Recent Activity</p>
       {activity.length === 0 ? (
         <p className="mt-3 text-sm text-secondary">No actions yet in this session.</p>
@@ -67,7 +67,13 @@ export function RecentActivityPanel({ activity }: RecentActivityPanelProps) {
           {activity.map((entry) => (
             <li
               key={entry.id}
-              className="rounded-lg border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3 py-2 text-xs"
+              className={`rounded-lg border bg-[var(--bg-surface)] px-3 py-2 text-xs ${
+                entry.kind === "success"
+                  ? "border-[var(--success-border)]"
+                  : entry.kind === "warning"
+                    ? "border-[var(--warning-border)]"
+                    : "border-[var(--border-soft)]"
+              }`}
             >
               <p className="mb-1 flex items-center gap-1 font-semibold text-[var(--text-primary)]">
                 {entry.kind === "success" ? (
@@ -80,7 +86,7 @@ export function RecentActivityPanel({ activity }: RecentActivityPanelProps) {
                 {entry.kind === "success" ? "Success" : entry.kind === "warning" ? "Warning" : "Info"}
               </p>
               <p className="text-secondary">{entry.text}</p>
-              <p className="mt-1 text-muted">{getRelativeTime(entry.createdAt)}</p>
+              <p className="mono-data mt-1 text-muted">{getRelativeTime(entry.createdAt)}</p>
             </li>
           ))}
         </ul>

@@ -17,7 +17,7 @@ export function OAuthFlowPanel({ oauthPending, oauthSteps }: OAuthFlowPanelProps
       id="add-account-panel-oauth"
       role="tabpanel"
       aria-labelledby="add-account-tab-oauth"
-      className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-4"
+      className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-4 shadow-[var(--shadow-soft)]"
     >
       <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">OAuth flow</h3>
       <ol className="space-y-2 text-sm text-secondary">
@@ -38,7 +38,7 @@ export function OAuthFlowPanel({ oauthPending, oauthSteps }: OAuthFlowPanelProps
       </ol>
 
       {oauthPending && (
-        <div className="mt-4 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-2 text-sm text-[var(--accent-primary)]">
+        <div className="mt-4 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-2 text-sm text-[var(--accent-primary)] shadow-[0_10px_20px_rgb(37_99_235_/_.14)]">
           Waiting for browser login… Complete authentication to finish setup.
         </div>
       )}
