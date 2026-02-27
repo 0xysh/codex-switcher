@@ -52,7 +52,6 @@ function UsageMetric({
           healthyBar: "bg-gradient-to-r from-[var(--usage-5h)] to-[#4f80ea]",
           warningBar: "bg-gradient-to-r from-[#f59e0b] to-[#f4b153]",
           healthyText: "text-[var(--usage-5h)]",
-          windowTone: "Burst window",
         }
       : {
           label: "text-[var(--usage-7d)]",
@@ -60,7 +59,6 @@ function UsageMetric({
           healthyBar: "bg-gradient-to-r from-[var(--usage-7d)] to-[#2ac598]",
           warningBar: "bg-gradient-to-r from-[#fb923c] to-[#fbb36f]",
           healthyText: "text-[var(--usage-7d)]",
-          windowTone: "Rolling window",
         };
 
   const tone =
@@ -86,36 +84,36 @@ function UsageMetric({
 
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between gap-2 text-xs">
         <span className={`flex items-center gap-1.5 font-semibold ${metricStyle.label}`}>
           <span className={`inline-flex h-[1.375rem] w-[1.375rem] items-center justify-center rounded-full border ${metricStyle.iconBadge}`}>
             <IconActivity className="h-3 w-3" />
           </span>
           <span>{label}</span>
-          <span className="mono-data rounded-full border border-[var(--border-soft)] bg-[var(--bg-surface)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
-            {metricStyle.windowTone}
-          </span>
           {windowLabel && <span className="text-muted">({windowLabel})</span>}
         </span>
-        <span className={`mono-data tabular-nums inline-flex items-center gap-1 ${tone.text}`}>
+
+        {resetLabel ? (
+          <span className={`mono-data inline-flex shrink-0 items-center gap-1 text-[11px] font-medium ${tone.text}`}>
+            <IconClock className="h-3 w-3" />
+            resets in {resetLabel}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full border border-[var(--border-soft)] bg-[var(--bg-surface)]">
+          <div
+            className={`h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none ${tone.bar}`}
+            style={{ width: `${Math.min(remainingPercent, 100)}%` }}
+          />
+        </div>
+
+        <span className={`mono-data tabular-nums inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold ${tone.text}`}>
           <ToneIcon className="h-3.5 w-3.5" />
           {remainingPercent.toFixed(0)}% left
         </span>
       </div>
-
-      <div className="h-2.5 overflow-hidden rounded-full border border-[var(--border-soft)] bg-[var(--bg-surface)]">
-        <div
-          className={`h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none ${tone.bar}`}
-          style={{ width: `${Math.min(remainingPercent, 100)}%` }}
-        />
-      </div>
-
-      {resetLabel && (
-        <p className={`flex w-full items-center justify-end gap-1 text-[11px] font-medium ${tone.text}`}>
-          <IconClock className="h-3 w-3" />
-          resets in {resetLabel}
-        </p>
-      )}
     </div>
   );
 }

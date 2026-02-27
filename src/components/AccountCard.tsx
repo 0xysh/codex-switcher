@@ -7,7 +7,6 @@ import {
   Button,
   IconActivity,
   IconAlertTriangle,
-  IconCheck,
   IconClock,
   IconButton,
   IconKey,
@@ -221,18 +220,6 @@ export function AccountCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2.5 shadow-[var(--shadow-soft)]">
-          {account.is_active ? (
-            <span className="chip chip-accent">
-              <IconCheck className="h-3.5 w-3.5" />
-              Active
-            </span>
-          ) : (
-            <span className="chip">
-              <IconActivity className="h-3.5 w-3.5" />
-              Standby
-            </span>
-          )}
-
           <span className={usageStatus.className}>
             <UsageStatusIcon className="h-3.5 w-3.5" />
             {usageStatus.label}
