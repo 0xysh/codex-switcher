@@ -11,6 +11,21 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function reorderAccountsByIds(accounts: AccountWithUsage[], accountIds: string[]): AccountWithUsage[] | null {
+  if (accounts.length !== accountIds.length) {
+    return null;
+  }
+
+  const accountMap = new Map(accounts.map((account) => [account.id, account]));
+  const reordered = accountIds.map((accountId) => accountMap.get(accountId)).filter(Boolean) as AccountWithUsage[];
+
+  if (reordered.length !== accounts.length) {
+    return null;
+  }
+
+  return reordered;
+}
+
 export function useAccounts() {
   const [accounts, setAccounts] = useState<AccountWithUsage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,6 +252,15 @@ export function useAccounts() {
     return snapshotPath;
   }, [refreshCurrentSession]);
 
+  const reorderAccounts = useCallback(async (accountIds: string[]) => {
+    try {
+      await invoke("reorder_accounts", { accountIds });
+      setAccounts((prev) => reorderAccountsByIds(prev, accountIds) ?? prev);
+    } catch (err) {
+      throw err;
+    }
+  }, []);
+
   useEffect(() => {
     loadAccounts().then(() => refreshUsage());
     refreshCurrentSession().catch((err) => {
@@ -263,6 +287,7 @@ export function useAccounts() {
     switchAccount,
     deleteAccount,
     renameAccount,
+    reorderAccounts,
     importFromFile,
     startOAuthLogin,
     completeOAuthLogin,

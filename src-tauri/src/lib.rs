@@ -8,8 +8,8 @@ pub mod types;
 use commands::{
     add_account_from_file, cancel_login, check_codex_processes, complete_login, complete_reconnect,
     create_auth_snapshot, delete_account, get_active_account_info, get_current_auth_summary,
-    get_usage, list_accounts, refresh_all_accounts_usage, rename_account, start_login,
-    start_reconnect, switch_account,
+    get_usage, list_accounts, refresh_all_accounts_usage, rename_account, reorder_accounts,
+    start_login, start_reconnect, switch_account,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -26,6 +26,7 @@ pub fn run() {
             switch_account,
             delete_account,
             rename_account,
+            reorder_accounts,
             // OAuth
             start_login,
             complete_login,

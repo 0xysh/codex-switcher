@@ -19,6 +19,7 @@ type UseAccountsState = {
   switchAccount: (accountId: string) => Promise<void>;
   deleteAccount: (accountId: string) => Promise<void>;
   renameAccount: (accountId: string, newName: string) => Promise<void>;
+  reorderAccounts: (accountIds: string[]) => Promise<void>;
   importFromFile: (path: string, name: string) => Promise<void>;
   startOAuthLogin: (accountName: string) => Promise<OAuthLoginInfo>;
   completeOAuthLogin: () => Promise<AccountInfo>;
@@ -53,6 +54,9 @@ export function createUseAccountsMock(
       return;
     }),
     renameAccount: vi.fn(async (_accountId: string, _newName: string) => {
+      return;
+    }),
+    reorderAccounts: vi.fn(async (_accountIds: string[]) => {
       return;
     }),
     importFromFile: vi.fn(async (_path: string, _name: string) => {

@@ -46,6 +46,7 @@ function App() {
     saveCurrentSessionSnapshot,
     deleteAccount,
     renameAccount,
+    reorderAccounts,
     importFromFile,
     startOAuthLogin,
     completeOAuthLogin,
@@ -185,6 +186,22 @@ function App() {
     [accounts, pushActivity, reconnectAccount],
   );
 
+  const handleReorderAccounts = useCallback(
+    async (accountIds: string[]) => {
+      try {
+        await reorderAccounts(accountIds);
+        setAnnouncement("Account order updated.");
+        pushActivity("neutral", "Account order updated.");
+      } catch (error) {
+        console.error("Failed to reorder accounts:", getErrorMessage(error));
+        setAnnouncement("Failed to reorder accounts.");
+        pushActivity("warning", "Account reorder failed.");
+        throw error;
+      }
+    },
+    [pushActivity, reorderAccounts],
+  );
+
   return (
     <div className="app-shell">
       <a
@@ -220,6 +237,7 @@ function App() {
               onRefreshSingleUsage={refreshSingleUsage}
               onReconnectAccount={handleReconnect}
               onRename={renameAccount}
+              onReorderAccounts={handleReorderAccounts}
             />
 
             <CurrentCodexSessionCard

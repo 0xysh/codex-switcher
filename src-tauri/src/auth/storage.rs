@@ -2,6 +2,7 @@
 
 use std::fs;
 use std::path::PathBuf;
+use std::{collections::HashMap, collections::HashSet};
 
 use anyhow::{Context, Result};
 
@@ -172,6 +173,52 @@ pub fn remove_account(account_id: &str) -> Result<()> {
         store.active_account_id = store.accounts.first().map(|a| a.id.clone());
     }
 
+    save_accounts(&store)?;
+    Ok(())
+}
+
+/// Persist a new explicit account ordering
+pub fn reorder_accounts(account_ids: Vec<String>) -> Result<()> {
+    let mut store = load_accounts()?;
+
+    if store.accounts.len() != account_ids.len() {
+        anyhow::bail!(
+            "Account order size mismatch: expected {}, received {}",
+            store.accounts.len(),
+            account_ids.len()
+        );
+    }
+
+    let expected_ids: HashSet<&str> = store
+        .accounts
+        .iter()
+        .map(|account| account.id.as_str())
+        .collect();
+    let provided_ids: HashSet<&str> = account_ids.iter().map(String::as_str).collect();
+
+    if provided_ids.len() != account_ids.len() {
+        anyhow::bail!("Account order contains duplicate IDs");
+    }
+
+    if expected_ids != provided_ids {
+        anyhow::bail!("Account order must include each stored account exactly once");
+    }
+
+    let mut accounts_by_id: HashMap<String, StoredAccount> = store
+        .accounts
+        .into_iter()
+        .map(|account| (account.id.clone(), account))
+        .collect();
+
+    let mut reordered = Vec::with_capacity(account_ids.len());
+    for account_id in account_ids {
+        let account = accounts_by_id
+            .remove(&account_id)
+            .with_context(|| format!("Missing account in reorder payload: {account_id}"))?;
+        reordered.push(account);
+    }
+
+    store.accounts = reordered;
     save_accounts(&store)?;
     Ok(())
 }

@@ -16,6 +16,17 @@ const OAUTH_ACCOUNT: AccountInfo = {
   last_used_at: null,
 };
 
+const SECOND_ACCOUNT: AccountInfo = {
+  id: "acc-oauth-2",
+  name: "Second Account",
+  email: "second@example.com",
+  plan_type: "plus",
+  auth_mode: "chat_gpt",
+  is_active: false,
+  created_at: new Date().toISOString(),
+  last_used_at: null,
+};
+
 beforeEach(() => {
   invokeMock.mockReset();
 });
@@ -125,4 +136,40 @@ it("reconnects an OAuth account without requiring re-add flow", async () => {
   expect(invokeMock).toHaveBeenCalledWith("start_reconnect", { accountId: OAUTH_ACCOUNT.id });
   expect(invokeMock).toHaveBeenCalledWith("complete_reconnect");
   expect(result.current.accounts.find((account) => account.id === OAUTH_ACCOUNT.id)?.email).toBe("renewed@example.com");
+});
+
+it("reorders accounts and persists the new order", async () => {
+  invokeMock.mockImplementation(
+    (async (command: string, args?: { accountIds?: string[] }) => {
+      switch (command) {
+        case "list_accounts":
+          return [OAUTH_ACCOUNT, SECOND_ACCOUNT];
+        case "refresh_all_accounts_usage":
+          return [];
+        case "reorder_accounts":
+          expect(args?.accountIds).toEqual([SECOND_ACCOUNT.id, OAUTH_ACCOUNT.id]);
+          return null;
+        default:
+          return null;
+      }
+    }) as unknown as Parameters<typeof invokeMock.mockImplementation>[0],
+  );
+
+  const { result } = renderHook(() => useAccounts());
+
+  await waitFor(() => {
+    expect(result.current.loading).toBe(false);
+  });
+
+  await act(async () => {
+    await result.current.reorderAccounts([SECOND_ACCOUNT.id, OAUTH_ACCOUNT.id]);
+  });
+
+  expect(invokeMock).toHaveBeenCalledWith("reorder_accounts", {
+    accountIds: [SECOND_ACCOUNT.id, OAUTH_ACCOUNT.id],
+  });
+  expect(result.current.accounts.map((account) => account.id)).toEqual([
+    SECOND_ACCOUNT.id,
+    OAUTH_ACCOUNT.id,
+  ]);
 });

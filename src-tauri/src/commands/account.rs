@@ -2,7 +2,8 @@
 
 use crate::auth::{
     add_account, get_active_account, import_from_auth_json, load_accounts, remove_account,
-    set_active_account, switch_to_account, touch_account,
+    reorder_accounts as reorder_stored_accounts, set_active_account, switch_to_account,
+    touch_account,
 };
 use crate::types::AccountInfo;
 
@@ -85,5 +86,12 @@ pub async fn delete_account(account_id: String) -> Result<(), String> {
 pub async fn rename_account(account_id: String, new_name: String) -> Result<(), String> {
     crate::auth::storage::update_account_metadata(&account_id, Some(new_name), None, None)
         .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Persist account ordering
+#[tauri::command]
+pub async fn reorder_accounts(account_ids: Vec<String>) -> Result<(), String> {
+    reorder_stored_accounts(account_ids).map_err(|e| e.to_string())?;
     Ok(())
 }
