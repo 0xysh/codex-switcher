@@ -69,7 +69,10 @@ function App() {
     if (deleteConfirmId !== accountId) {
       setDeleteConfirmId(accountId);
       setAnnouncement("Click delete again to confirm removal");
-      setTimeout(() => setDeleteConfirmId(null), 3000);
+      setTimeout(() => {
+        setDeleteConfirmId(null);
+        setAnnouncement(null);
+      }, 3000);
       return;
     }
 
@@ -90,6 +93,9 @@ function App() {
       setRefreshSuccess(true);
       setAnnouncement("Usage refreshed successfully");
       setTimeout(() => setRefreshSuccess(false), 2000);
+    } catch (err) {
+      console.error("Failed to refresh usage:", err);
+      setAnnouncement("Failed to refresh usage");
     } finally {
       setIsRefreshing(false);
     }
