@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import type { AccountInfo, UsageInfo, AccountWithUsage } from "../types";
+import type {
+  AccountInfo,
+  UsageInfo,
+  AccountWithUsage,
+  CurrentAuthSummary,
+} from "../types";
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -10,6 +15,7 @@ export function useAccounts() {
   const [accounts, setAccounts] = useState<AccountWithUsage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentSession, setCurrentSession] = useState<CurrentAuthSummary | null>(null);
 
   const mergeAccountSnapshot = useCallback((account: AccountInfo) => {
     setAccounts((prev) => {
@@ -182,8 +188,23 @@ export function useAccounts() {
     }
   }, []);
 
+  const refreshCurrentSession = useCallback(async () => {
+    const summary = await invoke<CurrentAuthSummary>("get_current_auth_summary");
+    setCurrentSession(summary);
+    return summary;
+  }, []);
+
+  const saveCurrentSessionSnapshot = useCallback(async () => {
+    const snapshotPath = await invoke<string>("create_auth_snapshot");
+    await refreshCurrentSession();
+    return snapshotPath;
+  }, [refreshCurrentSession]);
+
   useEffect(() => {
     loadAccounts().then(() => refreshUsage());
+    refreshCurrentSession().catch((err) => {
+      console.error("Failed to load current session summary:", getErrorMessage(err));
+    });
     
     // Auto-refresh usage every 60 seconds (same as official Codex CLI)
     const interval = setInterval(() => {
@@ -191,12 +212,14 @@ export function useAccounts() {
     }, 60000);
     
     return () => clearInterval(interval);
-  }, [loadAccounts, refreshUsage]);
+  }, [loadAccounts, refreshCurrentSession, refreshUsage]);
 
   return {
     accounts,
     loading,
     error,
+    currentSession,
+    snapshotsDirPath: currentSession?.snapshots_dir_path ?? null,
     loadAccounts,
     refreshUsage,
     refreshSingleUsage,
@@ -207,5 +230,7 @@ export function useAccounts() {
     startOAuthLogin,
     completeOAuthLogin,
     cancelOAuthLogin,
+    refreshCurrentSession,
+    saveCurrentSessionSnapshot,
   };
 }

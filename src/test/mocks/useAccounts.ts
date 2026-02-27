@@ -1,11 +1,18 @@
 import { vi } from "vitest";
 
-import type { AccountInfo, AccountWithUsage, OAuthLoginInfo } from "../../types";
+import type {
+  AccountInfo,
+  AccountWithUsage,
+  CurrentAuthSummary,
+  OAuthLoginInfo,
+} from "../../types";
 
 type UseAccountsState = {
   accounts: AccountWithUsage[];
   loading: boolean;
   error: string | null;
+  currentSession: CurrentAuthSummary | null;
+  snapshotsDirPath: string | null;
   loadAccounts: (preserveUsage?: boolean) => Promise<void>;
   refreshUsage: () => Promise<void>;
   refreshSingleUsage: (accountId: string) => Promise<void>;
@@ -16,6 +23,8 @@ type UseAccountsState = {
   startOAuthLogin: (accountName: string) => Promise<OAuthLoginInfo>;
   completeOAuthLogin: () => Promise<AccountInfo>;
   cancelOAuthLogin: () => Promise<void>;
+  refreshCurrentSession: () => Promise<CurrentAuthSummary>;
+  saveCurrentSessionSnapshot: () => Promise<string>;
 };
 
 const asyncNoop = async () => undefined;
@@ -27,6 +36,8 @@ export function createUseAccountsMock(
     accounts: [],
     loading: false,
     error: null,
+    currentSession: null,
+    snapshotsDirPath: null,
     loadAccounts: vi.fn(async (_preserveUsage?: boolean) => {
       return;
     }),
@@ -61,6 +72,17 @@ export function createUseAccountsMock(
       last_used_at: null,
     })),
     cancelOAuthLogin: vi.fn(asyncNoop),
+    refreshCurrentSession: vi.fn(async (): Promise<CurrentAuthSummary> => ({
+      status: "missing",
+      auth_mode: null,
+      email: null,
+      plan_type: null,
+      auth_file_path: "/Users/mock/.codex/auth.json",
+      snapshots_dir_path: "/Users/mock/.codex-switcher/snapshots",
+      last_modified_at: null,
+      message: "No active Codex session file was found",
+    })),
+    saveCurrentSessionSnapshot: vi.fn(async () => "/Users/mock/.codex-switcher/snapshots/auth-snapshot-mock.json"),
     ...overrides,
   };
 }
