@@ -116,14 +116,22 @@ export function AddAccountModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white border border-gray-200 rounded-2xl w-full max-w-md mx-4 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overscroll-contain">
+      <div
+        className="mx-4 w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-account-modal-title"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Add Account</h2>
+          <h2 id="add-account-modal-title" className="text-lg font-semibold text-gray-900">
+            Add Account
+          </h2>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close Add Account Modal"
           >
             ✕
           </button>
@@ -160,14 +168,20 @@ export function AddAccountModal({
         <div className="p-5 space-y-4">
           {/* Account Name (always shown) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="account-name"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Account Name
             </label>
             <input
+              id="account-name"
+              name="accountName"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Work Account"
+              autoComplete="off"
               className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400 transition-colors"
             />
           </div>
@@ -178,7 +192,7 @@ export function AddAccountModal({
               {oauthPending ? (
                 <div className="text-center py-4">
                   <div className="animate-spin h-8 w-8 border-2 border-gray-900 border-t-transparent rounded-full mx-auto mb-3"></div>
-                  <p className="text-gray-700">Waiting for browser login...</p>
+                  <p className="text-gray-700">Waiting for browser login…</p>
                   <p className="text-xs text-gray-400 mt-1">
                     Complete the login in your browser
                   </p>
@@ -205,7 +219,7 @@ export function AddAccountModal({
                   onClick={handleSelectFile}
                   className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors whitespace-nowrap"
                 >
-                  Browse...
+                  Browse…
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-2">
@@ -216,7 +230,11 @@ export function AddAccountModal({
 
           {/* Error */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+            <div
+              className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm"
+              role="status"
+              aria-live="polite"
+            >
               {error}
             </div>
           )}
@@ -236,7 +254,7 @@ export function AddAccountModal({
             className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg bg-gray-900 hover:bg-gray-800 text-white transition-colors disabled:opacity-50"
           >
             {loading
-              ? "Adding..."
+              ? "Adding…"
               : activeTab === "oauth"
                 ? "Login with ChatGPT"
                 : "Import"}
