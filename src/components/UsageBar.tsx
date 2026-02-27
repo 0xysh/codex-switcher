@@ -142,10 +142,6 @@ export function UsageBar({ usage, loading = false }: UsageBarProps) {
           resetsAt={usage.secondary_resets_at}
         />
       )}
-
-      {usage.credits_balance && (
-        <p className="mono-data text-[11px] text-secondary">Credits: {usage.credits_balance}</p>
-      )}
     </div>
   );
 }

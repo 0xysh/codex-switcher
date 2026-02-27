@@ -53,3 +53,40 @@ it("uses the same controls layout for active and inactive cards without switch C
     expect(within(card).queryByText(/active now/i)).not.toBeInTheDocument();
   });
 });
+
+it("shows credits beside account identity when credits balance exists", () => {
+  render(
+    <AccountCard
+      account={{
+        id: "acc-credits",
+        name: "Credits Account",
+        email: "credits@example.com",
+        plan_type: "plus",
+        auth_mode: "chat_gpt",
+        is_active: false,
+        created_at: new Date().toISOString(),
+        last_used_at: null,
+        usage: {
+          account_id: "acc-credits",
+          plan_type: "plus",
+          primary_used_percent: 35,
+          primary_window_minutes: 300,
+          primary_resets_at: Math.floor(Date.now() / 1000) + 3600,
+          secondary_used_percent: null,
+          secondary_window_minutes: null,
+          secondary_resets_at: null,
+          has_credits: true,
+          unlimited_credits: false,
+          credits_balance: "17.25",
+          error: null,
+        },
+      }}
+      onDelete={() => {}}
+      onRefresh={async () => {}}
+      onRename={async () => {}}
+      onToggleMask={() => {}}
+    />,
+  );
+
+  expect(screen.getByText("Credits: 17.25")).toBeInTheDocument();
+});

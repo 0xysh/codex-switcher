@@ -151,6 +151,7 @@ export function AccountCard({
   const authModeDisplay = account.auth_mode === "api_key" ? "Imported" : "OAuth";
   const usageStatus = getUsageStatus(account);
   const UsageStatusIcon = usageStatus.icon;
+  const creditsBalance = account.usage?.credits_balance;
 
   return (
     <article
@@ -162,9 +163,9 @@ export function AccountCard({
     >
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-border)] to-transparent" />
 
-      <header className="mb-5 flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="mb-2 flex items-center gap-2">
+      <header className="mb-5 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             {account.is_active ? (
               <span className="chip chip-accent">
                 <IconCheck className="h-3.5 w-3.5" />
@@ -176,12 +177,37 @@ export function AccountCard({
                 Standby
               </span>
             )}
+
             <span className={usageStatus.className}>
               <UsageStatusIcon className="h-3.5 w-3.5" />
               {usageStatus.label}
             </span>
+
+            <span className="chip">
+              <IconActivity className="h-3.5 w-3.5" />
+              {planDisplay}
+            </span>
+
+            <span className="chip">
+              <IconShieldCheck className="h-3.5 w-3.5" />
+              {authModeDisplay}
+            </span>
           </div>
 
+          <div className="flex shrink-0 items-center gap-2">
+            {onToggleMask && (
+              <IconButton
+                aria-label="Toggle Account Visibility"
+                onClick={onToggleMask}
+                title={masked ? "Show account details" : "Hide account details"}
+              >
+                {masked ? <IconEye className="h-4 w-4" /> : <IconEyeOff className="h-4 w-4" />}
+              </IconButton>
+            )}
+          </div>
+        </div>
+
+        <div className="min-w-0 border-b border-[var(--border-soft)] pb-3">
           {isEditing ? (
             <input
               ref={inputRef}
@@ -210,39 +236,26 @@ export function AccountCard({
             </button>
           )}
 
-          <div className="mt-1 flex min-w-0 items-center gap-2 text-sm text-secondary">
-            {account.auth_mode === "api_key" ? (
-              <IconKey className="h-4 w-4" />
-            ) : (
-              <IconShieldCheck className="h-4 w-4" />
-            )}
-            {account.email ? <span className="truncate"><BlurredText blur={masked}>{account.email}</BlurredText></span> : <span className="text-muted">No email available</span>}
+          <div className="mt-1 flex items-center justify-between gap-3 text-sm text-secondary">
+            <div className="flex min-w-0 items-center gap-2">
+              {account.auth_mode === "api_key" ? (
+                <IconKey className="h-4 w-4" />
+              ) : (
+                <IconShieldCheck className="h-4 w-4" />
+              )}
+              {account.email ? (
+                <span className="truncate">
+                  <BlurredText blur={masked}>{account.email}</BlurredText>
+                </span>
+              ) : (
+                <span className="text-muted">No email available</span>
+              )}
+            </div>
+
+            {creditsBalance ? <span className="mono-data shrink-0 text-xs text-secondary">Credits: {creditsBalance}</span> : null}
           </div>
         </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {onToggleMask && (
-            <IconButton
-              aria-label="Toggle Account Visibility"
-              onClick={onToggleMask}
-              title={masked ? "Show account details" : "Hide account details"}
-            >
-              {masked ? <IconEye className="h-4 w-4" /> : <IconEyeOff className="h-4 w-4" />}
-            </IconButton>
-          )}
-        </div>
       </header>
-
-      <div className="mb-4 flex flex-wrap gap-2 border-y border-[var(--border-soft)] py-3">
-        <span className="chip">
-          <IconActivity className="h-3.5 w-3.5" />
-          {planDisplay}
-        </span>
-        <span className="chip">
-          <IconShieldCheck className="h-3.5 w-3.5" />
-          {authModeDisplay}
-        </span>
-      </div>
 
       <div className="mb-4 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-3">
         <UsageBar usage={account.usage} loading={isRefreshing || account.usageLoading} />
