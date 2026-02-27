@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { AccountWithUsage, CodexProcessInfo } from "../../../types";
+import type { AccountWithUsage } from "../../../types";
 import {
-  filterAndSortAccounts,
   getRelativeTime,
   needsAttention,
-  summarizeSafety,
+  summarizeAccounts,
 } from "../selectors";
 
 function createAccount(overrides: Partial<AccountWithUsage>): AccountWithUsage {
@@ -66,17 +65,16 @@ describe("needsAttention", () => {
   });
 });
 
-describe("filterAndSortAccounts", () => {
-  it("keeps active account first while sorting remaining by usage pressure", () => {
+describe("summarizeAccounts", () => {
+  it("returns account totals for usage-first header chips", () => {
     const accounts: AccountWithUsage[] = [
       createAccount({
-        id: "active",
-        name: "Active",
-        is_active: true,
+        id: "oauth-attention",
+        auth_mode: "chat_gpt",
         usage: {
-          account_id: "active",
+          account_id: "oauth-attention",
           plan_type: "plus",
-          primary_used_percent: 40,
+          primary_used_percent: 92,
           primary_window_minutes: null,
           primary_resets_at: null,
           secondary_used_percent: null,
@@ -88,67 +86,16 @@ describe("filterAndSortAccounts", () => {
           error: null,
         },
       }),
-      createAccount({
-        id: "high",
-        name: "High",
-        usage: {
-          account_id: "high",
-          plan_type: "plus",
-          primary_used_percent: 95,
-          primary_window_minutes: null,
-          primary_resets_at: null,
-          secondary_used_percent: null,
-          secondary_window_minutes: null,
-          secondary_resets_at: null,
-          has_credits: null,
-          unlimited_credits: null,
-          credits_balance: null,
-          error: null,
-        },
-      }),
-      createAccount({
-        id: "healthy",
-        name: "Healthy",
-        usage: {
-          account_id: "healthy",
-          plan_type: "plus",
-          primary_used_percent: 20,
-          primary_window_minutes: null,
-          primary_resets_at: null,
-          secondary_used_percent: null,
-          secondary_window_minutes: null,
-          secondary_resets_at: null,
-          has_credits: null,
-          unlimited_credits: null,
-          credits_balance: null,
-          error: null,
-        },
-      }),
+      createAccount({ id: "oauth-healthy", auth_mode: "chat_gpt" }),
+      createAccount({ id: "imported", auth_mode: "api_key" }),
     ];
 
-    const result = filterAndSortAccounts({
-      accounts,
-      query: "",
-      filter: "all",
-      sort: "usage",
+    expect(summarizeAccounts(accounts)).toEqual({
+      total: 3,
+      attention: 1,
+      oauth: 2,
+      imported: 1,
     });
-
-    expect(result.map((account) => account.id)).toEqual(["active", "high", "healthy"]);
-  });
-});
-
-describe("summarizeSafety", () => {
-  it("returns warning tone when codex process count is non-zero", () => {
-    const processInfo: CodexProcessInfo = {
-      count: 2,
-      can_switch: false,
-      pids: [111, 222],
-    };
-
-    const summary = summarizeSafety(processInfo);
-
-    expect(summary.title).toBe("Switching locked");
-    expect(summary.tone).toBe("chip chip-warning");
   });
 });
 
