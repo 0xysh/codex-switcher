@@ -74,11 +74,24 @@ pub fn load_accounts() -> Result<AccountsStore> {
         .with_context(|| format!("Failed to parse accounts file: {}", path.display()))?;
 
     let mut migrated_any_account = false;
+    let mut removed_accounts: Vec<String> = Vec::new();
+    let mut active_account_still_exists = false;
+    let current_active_id = store.active_account_id.clone();
+    let mut resolved_accounts = Vec::with_capacity(store.accounts.len());
 
-    for account in &mut store.accounts {
-        match load_account_secret(&account.id)? {
+    for mut account in store.accounts.into_iter() {
+        match load_account_secret(&account.id).with_context(|| {
+            format!(
+                "Failed to load keychain credentials for account '{}'",
+                account.name
+            )
+        })? {
             Some(auth_data) => {
                 account.auth_data = auth_data;
+                if current_active_id.as_deref() == Some(account.id.as_str()) {
+                    active_account_still_exists = true;
+                }
+                resolved_accounts.push(account);
             }
             None => {
                 if auth_data_has_real_secrets(&account.auth_data) {
@@ -89,18 +102,33 @@ pub fn load_accounts() -> Result<AccountsStore> {
                         )
                     })?;
                     migrated_any_account = true;
+                    if current_active_id.as_deref() == Some(account.id.as_str()) {
+                        active_account_still_exists = true;
+                    }
+                    resolved_accounts.push(account);
                 } else {
-                    anyhow::bail!(
-                        "Missing credentials in keychain for account '{}'. Re-add this account to restore access.",
-                        account.name
-                    );
+                    removed_accounts.push(account.name.clone());
                 }
             }
         }
     }
 
-    if migrated_any_account {
+    store.accounts = resolved_accounts;
+
+    if !active_account_still_exists {
+        store.active_account_id = store.accounts.first().map(|account| account.id.clone());
+    }
+
+    if migrated_any_account || !removed_accounts.is_empty() {
         save_accounts(&store)?;
+    }
+
+    if !removed_accounts.is_empty() {
+        eprintln!(
+            "[Security] Removed {} account metadata record(s) with missing keychain credentials: {}",
+            removed_accounts.len(),
+            removed_accounts.join(", ")
+        );
     }
 
     Ok(store)

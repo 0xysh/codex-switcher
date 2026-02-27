@@ -79,6 +79,7 @@ pnpm run check:ui
 
 - Credentials are stored in the OS keychain (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux).
 - Existing plaintext credentials in `~/.codex-switcher/accounts.json` are migrated automatically on first load and then redacted on disk.
+- If an account metadata record exists but its keychain secret is missing, the app now auto-removes that stale record at startup instead of blocking the entire account list.
 
 ## Disclaimer
 
