@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { useEffect, useMemo, useRef, useState } from "react";
+
 import { open } from "@tauri-apps/plugin-dialog";
+import { openUrl } from "@tauri-apps/plugin-opener";
+
+import { Button, IconButton, IconCheck, IconKey, IconShieldCheck, IconX } from "./ui";
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -31,7 +34,17 @@ export function AddAccountModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [oauthPending, setOauthPending] = useState(false);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
   const isPrimaryDisabled = loading || (activeTab === "oauth" && oauthPending);
+
+  const oauthSteps = useMemo(() => {
+    return [
+      { id: "authorize", label: "Authorize in browser", done: oauthPending },
+      { id: "verify", label: "Confirm callback", done: false },
+      { id: "save", label: "Save secure credentials", done: false },
+    ];
+  }, [oauthPending]);
 
   const resetForm = () => {
     setName("");
@@ -39,37 +52,97 @@ export function AddAccountModal({
     setError(null);
     setLoading(false);
     setOauthPending(false);
+    setActiveTab("oauth");
   };
 
-  const handleClose = () => {
+  const requestClose = () => {
     if (oauthPending) {
-      onCancelOAuth();
+      void onCancelOAuth().catch((err) => {
+        console.error("Failed to cancel login:", getErrorMessage(err));
+      });
     }
     resetForm();
     onClose();
   };
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return;
+    }
+
+    const getFocusableElements = () => {
+      const elements = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+
+      return elements.filter(
+        (element) => !element.hasAttribute("disabled") && element.getAttribute("aria-hidden") !== "true",
+      );
+    };
+
+    const focusableElements = getFocusableElements();
+    focusableElements[0]?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        requestClose();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusable = getFocusableElements();
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, oauthPending, onCancelOAuth, onClose]);
+
   const handleOAuthLogin = async () => {
     if (!name.trim()) {
-      setError("Please enter an account name");
+      setError("Please enter an account name.");
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
+
       const info = await onStartOAuth(name.trim());
       setOauthPending(true);
       setLoading(false);
 
-      // Open the auth URL in browser
       await openUrl(info.auth_url);
-
-      // Wait for completion
       await onCompleteOAuth();
-      handleClose();
+
+      requestClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(getErrorMessage(err));
       setLoading(false);
       setOauthPending(false);
     }
@@ -98,84 +171,104 @@ export function AddAccountModal({
 
   const handleImportFile = async () => {
     if (!name.trim()) {
-      setError("Please enter an account name");
+      setError("Please enter an account name.");
       return;
     }
+
     if (!filePath.trim()) {
-      setError("Please select an auth.json file");
+      setError("Please select an auth.json file.");
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
+
       await onImportFile(filePath.trim(), name.trim());
-      handleClose();
+      requestClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(getErrorMessage(err));
       setLoading(false);
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overscroll-contain">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-overlay)] px-4">
       <div
-        className="mx-4 w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-account-modal-title"
+        ref={dialogRef}
+        className="surface-panel-strong w-full max-w-xl overflow-hidden"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 id="add-account-modal-title" className="text-lg font-semibold text-gray-900">
-            Add Account
-          </h2>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Close Add Account Modal"
-          >
-            ✕
-          </button>
-        </div>
+        <header className="border-b border-[var(--border-soft)] px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 id="add-account-modal-title" className="text-2xl font-semibold text-[var(--text-primary)]">
+                Add a new account
+              </h2>
+              <p className="mt-1 text-sm text-secondary">
+                Connect with OAuth or import an existing local auth file.
+              </p>
+            </div>
+            <IconButton aria-label="Close Add Account Modal" onClick={requestClose}>
+              <IconX className="h-4 w-4" />
+            </IconButton>
+          </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-100">
-          {(["oauth", "import"] as Tab[]).map((tab) => (
+          <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] p-1">
             <button
-              key={tab}
+              type="button"
+              className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                activeTab === "oauth"
+                  ? "bg-[var(--accent-soft)] text-[var(--accent-primary)]"
+                  : "text-secondary hover:bg-[var(--bg-surface-elevated)]"
+              }`}
               onClick={() => {
-                if (tab === "import" && oauthPending) {
+                setActiveTab("oauth");
+                setError(null);
+              }}
+            >
+              <span className="inline-flex items-center gap-2">
+                <IconShieldCheck className="h-4 w-4" />
+                ChatGPT OAuth
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                activeTab === "import"
+                  ? "bg-[var(--accent-soft)] text-[var(--accent-primary)]"
+                  : "text-secondary hover:bg-[var(--bg-surface-elevated)]"
+              }`}
+              onClick={() => {
+                if (oauthPending) {
                   void onCancelOAuth().catch((err) => {
                     console.error("Failed to cancel login:", getErrorMessage(err));
                   });
                   setOauthPending(false);
                   setLoading(false);
                 }
-                setActiveTab(tab);
+                setActiveTab("import");
                 setError(null);
               }}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? "text-gray-900 border-b-2 border-gray-900 -mb-px"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
             >
-              {tab === "oauth" ? "ChatGPT Login" : "Import File"}
+              <span className="inline-flex items-center gap-2">
+                <IconKey className="h-4 w-4" />
+                Import auth.json
+              </span>
             </button>
-          ))}
-        </div>
+          </div>
+        </header>
 
-        {/* Content */}
-        <div className="p-5 space-y-4">
-          {/* Account Name (always shown) */}
+        <div className="space-y-5 px-6 py-5">
           <div>
-            <label
-              htmlFor="account-name"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
+            <label htmlFor="account-name" className="mb-2 block text-sm font-semibold text-secondary">
               Account Name
             </label>
             <input
@@ -183,87 +276,87 @@ export function AddAccountModal({
               name="accountName"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Work Account"
               autoComplete="off"
-              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400 transition-colors"
+              onChange={(event) => setName(event.target.value)}
+              placeholder="e.g. Production Team"
+              className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-4 py-3 text-sm text-[var(--text-primary)]"
             />
           </div>
 
-          {/* Tab-specific content */}
-          {activeTab === "oauth" && (
-            <div className="text-sm text-gray-500">
-              {oauthPending ? (
-                <div className="text-center py-4">
-                  <div className="animate-spin h-8 w-8 border-2 border-gray-900 border-t-transparent rounded-full mx-auto mb-3"></div>
-                  <p className="text-gray-700">Waiting for browser login…</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Complete the login in your browser
-                  </p>
-                </div>
-              ) : (
-                <p>
-                  Click the button below to log in with your ChatGPT account.
-                  Your browser will open for authentication.
-                </p>
-              )}
-            </div>
-          )}
+          {activeTab === "oauth" ? (
+            <section className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-4">
+              <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">OAuth flow</h3>
+              <ol className="space-y-2 text-sm text-secondary">
+                {oauthSteps.map((step, index) => (
+                  <li key={step.id} className="flex items-start gap-2">
+                    <span
+                      className={`mt-[2px] inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs ${
+                        step.done
+                          ? "border-[var(--success-border)] bg-[var(--success-soft)] text-[var(--success)]"
+                          : "border-[var(--border-soft)] bg-[var(--bg-surface)] text-secondary"
+                      }`}
+                    >
+                      {step.done ? <IconCheck className="h-3 w-3" /> : index + 1}
+                    </span>
+                    <span>{step.label}</span>
+                  </li>
+                ))}
+              </ol>
 
-          {activeTab === "import" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select auth.json file
-              </label>
-              <div className="flex gap-2">
-                <div className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 truncate">
+              {oauthPending && (
+                <div className="mt-4 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-2 text-sm text-[var(--accent-primary)]">
+                  Waiting for browser login… Complete authentication to finish setup.
+                </div>
+              )}
+            </section>
+          ) : (
+            <section className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-4">
+              <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Import credentials</h3>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="mono-data min-h-11 flex-1 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3 py-3 text-xs text-secondary">
                   {filePath || "No file selected"}
                 </div>
-                <button
-                  onClick={handleSelectFile}
-                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors whitespace-nowrap"
-                >
+                <Button variant="secondary" onClick={() => void handleSelectFile()}>
                   Browse…
-                </button>
+                </Button>
               </div>
-              <p className="text-xs text-gray-400 mt-2">
-                Import credentials from an existing Codex auth.json file
+              <p className="mt-3 text-xs text-muted">
+                Import only from trusted local files. Secrets are moved into your system keychain.
               </p>
-            </div>
+            </section>
           )}
 
-          {/* Error */}
           {error && (
             <div
-              className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm"
               role="status"
               aria-live="polite"
+              className="rounded-xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger)]"
             >
               {error}
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex gap-3 p-5 border-t border-gray-100">
-          <button
-            onClick={handleClose}
-            className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
-          >
+        <footer className="flex flex-col-reverse gap-3 border-t border-[var(--border-soft)] px-6 py-5 sm:flex-row sm:justify-end">
+          <Button variant="ghost" onClick={requestClose}>
             Cancel
-          </button>
-          <button
-            onClick={activeTab === "oauth" ? handleOAuthLogin : handleImportFile}
+          </Button>
+          <Button
+            variant="primary"
+            loading={isPrimaryDisabled}
             disabled={isPrimaryDisabled}
-            className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg bg-gray-900 hover:bg-gray-800 text-white transition-colors disabled:opacity-50"
+            onClick={() => {
+              if (activeTab === "oauth") {
+                void handleOAuthLogin();
+                return;
+              }
+
+              void handleImportFile();
+            }}
           >
-            {loading
-              ? "Adding…"
-              : activeTab === "oauth"
-                ? "Login with ChatGPT"
-                : "Import"}
-          </button>
-        </div>
+            {loading ? "Adding…" : activeTab === "oauth" ? "Login with ChatGPT" : "Import account"}
+          </Button>
+        </footer>
       </div>
     </div>
   );

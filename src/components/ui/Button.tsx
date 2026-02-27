@@ -1,34 +1,58 @@
 import type { ButtonHTMLAttributes } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
+  size?: ButtonSize;
+  loading?: boolean;
 }
 
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary:
-    "bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500",
+    "bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-secondary)] border border-transparent",
   secondary:
-    "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:bg-gray-100 disabled:text-gray-400",
-  ghost: "bg-transparent text-gray-700 hover:bg-gray-100 disabled:text-gray-400",
+    "bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] border border-[var(--border-soft)]",
+  ghost:
+    "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-surface-elevated)] border border-transparent",
   danger:
-    "bg-red-600 text-white hover:bg-red-700 disabled:bg-red-200 disabled:text-red-100",
+    "bg-[var(--danger)] text-white hover:brightness-110 border border-transparent",
+};
+
+const SIZE_CLASS: Record<ButtonSize, string> = {
+  sm: "h-10 px-3 text-sm",
+  md: "h-11 px-4 text-sm",
+  lg: "h-12 px-5 text-base",
 };
 
 export function Button({
   variant = "secondary",
+  size = "md",
+  loading = false,
   className,
   type = "button",
+  disabled,
+  children,
   ...props
 }: ButtonProps) {
   const composedClassName = [
-    "inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500 disabled:cursor-not-allowed",
+    "inline-flex touch-manipulation items-center justify-center gap-2 rounded-xl font-semibold transition-[background-color,border-color,color,opacity,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent-secondary)] disabled:cursor-not-allowed disabled:opacity-60",
     VARIANT_CLASS[variant],
+    SIZE_CLASS[size],
     className,
   ]
     .filter(Boolean)
     .join(" ");
 
-  return <button type={type} className={composedClassName} {...props} />;
+  return (
+    <button
+      type={type}
+      className={composedClassName}
+      disabled={disabled || loading}
+      {...props}
+    >
+      {children}
+    </button>
+  );
 }

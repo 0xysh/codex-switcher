@@ -1,7 +1,24 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
+
 import type { AccountWithUsage } from "../types";
-import { IconButton } from "./ui";
 import { UsageBar } from "./UsageBar";
+import {
+  Button,
+  IconActivity,
+  IconAlertTriangle,
+  IconArrowRightLeft,
+  IconCheck,
+  IconClock,
+  IconEye,
+  IconEyeOff,
+  IconButton,
+  IconKey,
+  IconPanelRight,
+  IconRefresh,
+  IconShieldCheck,
+  IconTrash,
+} from "./ui";
 
 interface AccountCardProps {
   account: AccountWithUsage;
@@ -12,21 +29,24 @@ interface AccountCardProps {
   switching?: boolean;
   switchDisabled?: boolean;
   masked?: boolean;
+  selected?: boolean;
   onToggleMask?: () => void;
+  onViewDetails?: () => void;
 }
 
 function formatLastRefresh(date: Date | null): string {
   if (!date) return "Never";
+
   const now = new Date();
   const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (diff < 5) return "Just now";
+  if (diff < 10) return "Just now";
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return date.toLocaleDateString();
 }
 
-function BlurredText({ children, blur }: { children: React.ReactNode; blur: boolean }) {
+function BlurredText({ children, blur }: { children: ReactNode; blur: boolean }) {
   return (
     <span
       className={`select-none transition-[filter] duration-200 ${blur ? "blur-sm" : ""}`}
@@ -35,6 +55,33 @@ function BlurredText({ children, blur }: { children: React.ReactNode; blur: bool
       {children}
     </span>
   );
+}
+
+function getUsageStatus(account: AccountWithUsage) {
+  if (account.usage?.error) {
+    return {
+      label: "Needs attention",
+      className: "chip chip-danger",
+      icon: IconAlertTriangle,
+    };
+  }
+
+  if (
+    typeof account.usage?.primary_used_percent === "number" &&
+    account.usage.primary_used_percent >= 80
+  ) {
+    return {
+      label: "Near limit",
+      className: "chip chip-warning",
+      icon: IconAlertTriangle,
+    };
+  }
+
+  return {
+    label: "Healthy",
+    className: "chip chip-success",
+    icon: IconShieldCheck,
+  };
 }
 
 export function AccountCard({
@@ -46,7 +93,9 @@ export function AccountCard({
   switching,
   switchDisabled,
   masked = false,
+  selected = false,
   onToggleMask,
+  onViewDetails,
 }: AccountCardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(
@@ -54,6 +103,7 @@ export function AccountCard({
   );
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(account.name);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -62,6 +112,10 @@ export function AccountCard({
       inputRef.current.select();
     }
   }, [isEditing]);
+
+  useEffect(() => {
+    setEditName(account.name);
+  }, [account.name]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -73,24 +127,30 @@ export function AccountCard({
     }
   };
 
-  const handleRename = async () => {
+  const commitRename = async () => {
     const trimmed = editName.trim();
-    if (trimmed && trimmed !== account.name) {
-      try {
-        await onRename(trimmed);
-      } catch {
-        setEditName(account.name);
-      }
-    } else {
+
+    if (!trimmed || trimmed === account.name) {
       setEditName(account.name);
+      setIsEditing(false);
+      return;
     }
-    setIsEditing(false);
+
+    try {
+      await onRename(trimmed);
+    } catch {
+      setEditName(account.name);
+    } finally {
+      setIsEditing(false);
+    }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleRename();
-    } else if (e.key === "Escape") {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      void commitRename();
+    }
+
+    if (event.key === "Escape") {
       setEditName(account.name);
       setIsEditing(false);
     }
@@ -102,169 +162,156 @@ export function AccountCard({
       ? "API Key"
       : "Unknown";
 
-  const planColors: Record<string, string> = {
-    pro: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    plus: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    team: "bg-blue-50 text-blue-700 border-blue-200",
-    enterprise: "bg-amber-50 text-amber-700 border-amber-200",
-    free: "bg-gray-50 text-gray-600 border-gray-200",
-    api_key: "bg-orange-50 text-orange-700 border-orange-200",
-  };
-
-  const planKey = account.plan_type?.toLowerCase() || "api_key";
-  const planColorClass = planColors[planKey] || planColors.free;
-
+  const authModeDisplay = account.auth_mode === "api_key" ? "Imported" : "OAuth";
+  const usageStatus = getUsageStatus(account);
+  const UsageStatusIcon = usageStatus.icon;
 
   return (
-    <div
-      className={`relative rounded-xl border p-5 transition-colors duration-200 ${
-        account.is_active
-          ? "bg-white border-emerald-400 shadow-sm"
-          : "bg-white border-gray-200 hover:border-gray-300"
-      }`}
+    <article
+      className={`surface-panel relative p-5 transition-[transform,border-color,box-shadow] duration-200 ${
+        selected
+          ? "border-[var(--accent-secondary)] shadow-[var(--shadow-raised)]"
+          : "hover:-translate-y-[1px] hover:border-[var(--border-strong)]"
+      } ${account.is_active ? "border-[var(--accent-primary)]" : ""}`}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            {account.is_active && (
-              <span className="flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+      <header className="mb-4 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex items-center gap-2">
+            {account.is_active ? (
+              <span className="chip chip-accent">
+                <IconCheck className="h-3.5 w-3.5" />
+                Active
+              </span>
+            ) : (
+              <span className="chip">
+                <IconArrowRightLeft className="h-3.5 w-3.5" />
+                Standby
               </span>
             )}
-            {isEditing ? (
-              <input
-                ref={inputRef}
-                type="text"
-                name="accountRename"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                onBlur={handleRename}
-                onKeyDown={handleKeyDown}
-                className="font-semibold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-300 focus:outline-none focus:border-gray-500 w-full"
-              />
-            ) : (
-              <h3 className="min-w-0">
-                <button
-                  type="button"
-                  aria-label="Rename Account"
-                  onClick={() => !masked && setIsEditing(true)}
-                  title={masked ? undefined : "Rename account"}
-                  disabled={masked}
-                  className="w-full truncate text-left font-semibold text-gray-900 transition-colors hover:text-gray-600 disabled:cursor-default disabled:hover:text-gray-900"
-                >
-                  <BlurredText blur={masked}>{account.name}</BlurredText>
-                </button>
-              </h3>
-            )}
+            <span className={usageStatus.className}>
+              <UsageStatusIcon className="h-3.5 w-3.5" />
+              {usageStatus.label}
+            </span>
           </div>
-          {account.email && (
-            <p className="text-sm text-gray-500 truncate">
-              <BlurredText blur={masked}>{account.email}</BlurredText>
-            </p>
+
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              name="accountRename"
+              value={editName}
+              onChange={(event) => setEditName(event.target.value)}
+              onBlur={() => {
+                void commitRename();
+              }}
+              onKeyDown={handleKeyDown}
+              className="w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3 py-2 text-base font-semibold text-[var(--text-primary)]"
+            />
+          ) : (
+            <button
+              type="button"
+              aria-label="Rename Account"
+              onClick={() => !masked && setIsEditing(true)}
+              disabled={masked}
+              className="w-full cursor-pointer truncate text-left text-lg font-semibold text-[var(--text-primary)] transition-colors hover:text-[var(--accent-secondary)] disabled:cursor-default disabled:hover:text-[var(--text-primary)]"
+            >
+              <BlurredText blur={masked}>{account.name}</BlurredText>
+            </button>
           )}
+
+          <div className="mt-1 flex items-center gap-2 text-sm text-secondary">
+            {account.auth_mode === "api_key" ? (
+              <IconKey className="h-4 w-4" />
+            ) : (
+              <IconShieldCheck className="h-4 w-4" />
+            )}
+            {account.email ? <BlurredText blur={masked}>{account.email}</BlurredText> : "No email available"}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Eye toggle */}
+        <div className="flex shrink-0 items-center gap-2">
           {onToggleMask && (
             <IconButton
-              onClick={onToggleMask}
-              className="text-gray-400 hover:bg-transparent hover:text-gray-600"
-              title={masked ? "Show info" : "Hide info"}
               aria-label="Toggle Account Visibility"
+              onClick={onToggleMask}
+              title={masked ? "Show account details" : "Hide account details"}
             >
-              {masked ? (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                </svg>
-              ) : (
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              )}
+              {masked ? <IconEye className="h-4 w-4" /> : <IconEyeOff className="h-4 w-4" />}
             </IconButton>
           )}
-          {/* Plan badge */}
-          <span
-            className={`px-2.5 py-1 text-xs font-medium rounded-full border ${planColorClass}`}
-          >
-            {planDisplay}
-          </span>
+          {onViewDetails && (
+            <IconButton aria-label="View Account Details" onClick={onViewDetails}>
+              <IconPanelRight className="h-4 w-4" />
+            </IconButton>
+          )}
         </div>
+      </header>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        <span className="chip">
+          <IconActivity className="h-3.5 w-3.5" />
+          {planDisplay}
+        </span>
+        <span className="chip">
+          <IconShieldCheck className="h-3.5 w-3.5" />
+          {authModeDisplay}
+        </span>
       </div>
 
-      {/* Usage */}
-      <div className="mb-3">
+      <div className="mb-4 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-3">
         <UsageBar usage={account.usage} loading={isRefreshing || account.usageLoading} />
       </div>
 
-      {/* Last refresh time */}
-      <div className="text-xs text-gray-400 mb-3">
-        Last updated: {formatLastRefresh(lastRefresh)}
+      <div className="mb-4 flex items-center gap-2 text-xs text-muted">
+        <IconClock className="h-3.5 w-3.5" />
+        Last updated {formatLastRefresh(lastRefresh)}
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2">
+      {switchDisabled && !account.is_active && (
+        <div className="mb-4 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-soft)] px-3 py-2 text-xs text-[var(--warning)]">
+          Close all running Codex processes before switching accounts.
+        </div>
+      )}
+
+      <footer className="flex items-center gap-2">
         {account.is_active ? (
-          <button
+          <Button
+            variant="secondary"
+            size="md"
+            className="flex-1 border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-primary)]"
             disabled
-            className="flex-1 px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-500 border border-gray-200 cursor-default"
           >
-            ✓ Active
-          </button>
+            <IconCheck className="h-4 w-4" />
+            Active Now
+          </Button>
         ) : (
-          <button
+          <Button
+            variant="primary"
+            size="md"
+            className="flex-1"
             onClick={onSwitch}
             disabled={switching || switchDisabled}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 ${
-              switchDisabled
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-gray-900 hover:bg-gray-800 text-white"
-            }`}
-            title={switchDisabled ? "Close all Codex processes first" : undefined}
           >
-            {switching ? "Switching…" : switchDisabled ? "Codex Running" : "Switch"}
-          </button>
+            <IconArrowRightLeft className="h-4 w-4" />
+            {switching ? "Switching…" : "Switch Now"}
+          </Button>
         )}
+
         <IconButton
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className={`h-auto w-auto px-3 py-2 text-sm rounded-lg ${
-            isRefreshing
-              ? "bg-gray-200 text-gray-400"
-              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
-          }`}
-          title="Refresh usage"
           aria-label="Refresh Usage"
+          onClick={() => {
+            void handleRefresh();
+          }}
+          disabled={isRefreshing}
+          tone="accent"
         >
-          <span className={isRefreshing ? "inline-block animate-spin" : ""} aria-hidden="true">
-            ↻
-          </span>
+          <IconRefresh className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
         </IconButton>
-        <IconButton
-          onClick={onDelete}
-          className="h-auto w-auto rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 hover:bg-red-100"
-          title="Remove account"
-          aria-label="Remove Account"
-        >
-          <span aria-hidden="true">✕</span>
+
+        <IconButton aria-label="Remove Account" onClick={onDelete} tone="danger">
+          <IconTrash className="h-4 w-4" />
         </IconButton>
-      </div>
-    </div>
+      </footer>
+    </article>
   );
 }

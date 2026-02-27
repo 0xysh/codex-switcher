@@ -52,12 +52,12 @@ it("clears refresh loading state when refresh fails", async () => {
   render(<App />);
 
   const refreshButton = await screen.findByRole("button", {
-    name: /refresh all/i,
+    name: /refresh usage/i,
   });
   await user.click(refreshButton);
 
   expect(
-    await screen.findByRole("button", { name: /refresh all/i })
+    await screen.findByRole("button", { name: /refresh usage/i })
   ).toBeEnabled();
   expect(
     await screen.findByRole("status", { name: /global announcements/i })
@@ -87,17 +87,17 @@ it("clears delete confirmation message after timeout", async () => {
 
   await user.click(screen.getByRole("button", { name: /remove account/i }));
   expect(
-    screen.getByText(/click delete again to confirm removal/i, {
+    screen.getByText(/press delete again to confirm account removal/i, {
       selector: "div.fixed",
     })
   ).toBeInTheDocument();
 
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 3100));
+    await new Promise((resolve) => setTimeout(resolve, 3400));
   });
 
   expect(
-    screen.queryByText(/click delete again to confirm removal/i, {
+    screen.queryByText(/press delete again to confirm account removal/i, {
       selector: "div.fixed",
     })
   ).not.toBeInTheDocument();

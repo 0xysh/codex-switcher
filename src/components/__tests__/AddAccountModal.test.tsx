@@ -47,9 +47,9 @@ it("does not stay stuck in oauth pending state after cancellation", async () => 
     await screen.findByText(/waiting for browser login…/i)
   ).toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: /^import file$/i }));
+  await user.click(screen.getByRole("button", { name: /import auth\.json/i }));
 
   expect(onCancelOAuth).toHaveBeenCalledTimes(1);
   expect(screen.queryByText(/waiting for browser login…/i)).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /^import$/i })).toBeEnabled();
+  expect(screen.getByRole("button", { name: /import account/i })).toBeEnabled();
 });
