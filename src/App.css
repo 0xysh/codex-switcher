@@ -5,6 +5,7 @@
 body {
   font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
   line-height: 1.45;
+  text-rendering: optimizeLegibility;
 }
 
 h1,
@@ -12,6 +13,7 @@ h2,
 h3,
 h4 {
   font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+  text-wrap: balance;
 }
 
 ::-webkit-scrollbar {
@@ -21,7 +23,7 @@ h4 {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: var(--border-strong);
+  background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
 }
 
 ::-webkit-scrollbar-track {

@@ -6,26 +6,22 @@ interface AccountWorkspaceContentProps {
   accounts: AccountWithUsage[];
   loading: boolean;
   error: string | null;
-  maskedAccountIdSet: Set<string>;
   onOpenAddAccount: () => void;
   onDelete: (accountId: string) => void;
   onRefreshSingleUsage: (accountId: string) => Promise<void>;
   onReconnectAccount: (accountId: string) => Promise<void>;
   onRename: (accountId: string, newName: string) => Promise<void>;
-  onToggleMask: (accountId: string) => void;
 }
 
 export function AccountWorkspaceContent({
   accounts,
   loading,
   error,
-  maskedAccountIdSet,
   onOpenAddAccount,
   onDelete,
   onRefreshSingleUsage,
   onReconnectAccount,
   onRename,
-  onToggleMask,
 }: AccountWorkspaceContentProps) {
   if (loading && accounts.length === 0) {
     return (
@@ -77,8 +73,6 @@ export function AccountWorkspaceContent({
           onRefresh={() => onRefreshSingleUsage(account.id)}
           onReconnect={() => onReconnectAccount(account.id)}
           onRename={(newName: string) => onRename(account.id, newName)}
-          masked={maskedAccountIdSet.has(account.id)}
-          onToggleMask={() => onToggleMask(account.id)}
         />
       ))}
     </div>

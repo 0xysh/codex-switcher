@@ -32,15 +32,34 @@ function UsageMetric({
   usedPercent,
   windowMinutes,
   resetsAt,
+  variant,
 }: {
   label: string;
   usedPercent: number;
   windowMinutes?: number | null;
   resetsAt?: number | null;
+  variant: "five_hour" | "seven_day";
 }) {
   const remainingPercent = Math.max(0, 100 - usedPercent);
   const resetLabel = formatResetTime(resetsAt);
   const windowLabel = formatWindowDuration(windowMinutes);
+
+  const metricStyle =
+    variant === "five_hour"
+      ? {
+          label: "text-[var(--usage-5h)]",
+          iconBadge: "border-[var(--usage-5h)] bg-[var(--usage-5h-soft)]",
+          healthyBar: "bg-[var(--usage-5h)]",
+          warningBar: "bg-[#f59e0b]",
+          healthyText: "text-[var(--usage-5h)]",
+        }
+      : {
+          label: "text-[var(--usage-7d)]",
+          iconBadge: "border-[var(--usage-7d)] bg-[var(--usage-7d-soft)]",
+          healthyBar: "bg-[var(--usage-7d)]",
+          warningBar: "bg-[#fb923c]",
+          healthyText: "text-[var(--usage-7d)]",
+        };
 
   const tone =
     remainingPercent <= 10
@@ -51,13 +70,13 @@ function UsageMetric({
         }
       : remainingPercent <= 30
         ? {
-            bar: "bg-[var(--warning)]",
+            bar: metricStyle.warningBar,
             text: "text-[var(--warning)]",
             icon: IconAlertTriangle,
           }
         : {
-            bar: "bg-[var(--success)]",
-            text: "text-[var(--success)]",
+            bar: metricStyle.healthyBar,
+            text: metricStyle.healthyText,
             icon: IconShieldCheck,
           };
 
@@ -66,8 +85,10 @@ function UsageMetric({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs">
-        <span className="flex items-center gap-1 font-semibold text-secondary">
-          <IconActivity className="h-3.5 w-3.5" />
+        <span className={`flex items-center gap-1 font-semibold ${metricStyle.label}`}>
+          <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full border ${metricStyle.iconBadge}`}>
+            <IconActivity className="h-3 w-3" />
+          </span>
           {label}
           {windowLabel && <span className="text-muted">({windowLabel})</span>}
         </span>
@@ -85,7 +106,7 @@ function UsageMetric({
       </div>
 
       {resetLabel && (
-        <p className="flex items-center gap-1 text-[11px] text-muted">
+        <p className={`flex w-full items-center justify-end gap-1 text-[11px] font-medium ${tone.text}`}>
           <IconClock className="h-3 w-3" />
           resets in {resetLabel}
         </p>
@@ -131,16 +152,20 @@ export function UsageBar({ usage, loading = false }: UsageBarProps) {
           usedPercent={usage.primary_used_percent!}
           windowMinutes={usage.primary_window_minutes}
           resetsAt={usage.primary_resets_at}
+          variant="five_hour"
         />
       )}
 
       {hasSecondary && (
-        <UsageMetric
-          label="Weekly limit"
-          usedPercent={usage.secondary_used_percent!}
-          windowMinutes={usage.secondary_window_minutes}
-          resetsAt={usage.secondary_resets_at}
-        />
+        <div className={hasPrimary ? "border-t border-[var(--border-soft)] pt-3" : undefined}>
+          <UsageMetric
+            label="Weekly limit"
+            usedPercent={usage.secondary_used_percent!}
+            windowMinutes={usage.secondary_window_minutes}
+            resetsAt={usage.secondary_resets_at}
+            variant="seven_day"
+          />
+        </div>
       )}
     </div>
   );

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="src-tauri/icons/logo.svg" alt="Codex Switcher" width="128" height="128">
+  <img src="src-tauri/icons/logo.svg" alt="Codex Usage Inspector" width="128" height="128">
 </p>
 
-<h1 align="center">Codex Switcher</h1>
+<h1 align="center">Codex Usage Inspector</h1>
 
 <p align="center">
   A Desktop Application for Managing Multiple OpenAI <a href="https://github.com/openai/codex">Codex CLI</a> Accounts<br>
@@ -63,7 +63,7 @@ For macOS app-only output (without DMG), use:
 pnpm tauri build --bundles app
 ```
 
-This outputs `src-tauri/target/release/bundle/macos/Codex Switcher.app`.
+This outputs `src-tauri/target/release/bundle/macos/Codex Usage Inspector.app`.
 
 ## Development Quality Checks
 

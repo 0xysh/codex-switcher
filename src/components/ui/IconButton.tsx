@@ -10,10 +10,10 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label
 
 const TONE_CLASS: Record<IconButtonTone, string> = {
   neutral:
-    "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)]",
+    "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-elevated)]",
   accent:
-    "text-[var(--accent-primary)] hover:text-[var(--accent-secondary)] hover:bg-[var(--accent-soft)]",
-  danger: "text-[var(--danger)] hover:text-[var(--danger)] hover:bg-[var(--danger-soft)]",
+    "text-[var(--accent-primary)] hover:text-[var(--accent-secondary)] hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)]",
+  danger: "text-[var(--danger)] hover:text-[var(--danger)] hover:border-[var(--danger-border)] hover:bg-[var(--danger-soft)]",
 };
 
 const SIZE_CLASS = {

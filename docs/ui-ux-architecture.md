@@ -1,6 +1,6 @@
 # UI/UX Architecture
 
-This document defines frontend ownership boundaries and quality checks for Codex Switcher UI work.
+This document defines frontend ownership boundaries and quality checks for Codex Usage Inspector UI work.
 
 ## Frontend Boundaries
 

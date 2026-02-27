@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent } from "react";
 
 import type { AccountWithUsage } from "../types";
 import { UsageBar } from "./UsageBar";
@@ -9,8 +9,6 @@ import {
   IconAlertTriangle,
   IconCheck,
   IconClock,
-  IconEye,
-  IconEyeOff,
   IconButton,
   IconKey,
   IconRefresh,
@@ -25,8 +23,6 @@ interface AccountCardProps {
   onRefresh: () => Promise<void>;
   onReconnect?: () => Promise<void>;
   onRename: (newName: string) => Promise<void>;
-  masked?: boolean;
-  onToggleMask?: () => void;
 }
 
 function formatLastRefresh(date: Date | null): string {
@@ -39,17 +35,6 @@ function formatLastRefresh(date: Date | null): string {
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return date.toLocaleDateString();
-}
-
-function BlurredText({ children, blur }: { children: ReactNode; blur: boolean }) {
-  return (
-    <span
-      className={`select-none transition-[filter] duration-200 ${blur ? "blur-sm" : ""}`}
-      style={blur ? { userSelect: "none" } : undefined}
-    >
-      {children}
-    </span>
-  );
 }
 
 function getUsageStatus(account: AccountWithUsage) {
@@ -82,8 +67,6 @@ export function AccountCard({
   onRefresh,
   onReconnect,
   onRename,
-  masked = false,
-  onToggleMask,
 }: AccountCardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -179,56 +162,13 @@ export function AccountCard({
       className={`surface-panel relative p-5 transition-[transform,border-color,box-shadow] duration-200 ${
         account.is_active
           ? "border-[var(--accent-secondary)] shadow-[var(--shadow-raised)]"
-          : "hover:-translate-y-[1px] hover:border-[var(--border-strong)]"
+          : "hover:border-[var(--border-strong)]"
       } ${account.is_active ? "border-[var(--accent-primary)]" : ""}`}
     >
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-border)] to-transparent" />
 
       <header className="mb-5 space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            {account.is_active ? (
-              <span className="chip chip-accent">
-                <IconCheck className="h-3.5 w-3.5" />
-                Active
-              </span>
-            ) : (
-              <span className="chip">
-                <IconActivity className="h-3.5 w-3.5" />
-                Standby
-              </span>
-            )}
-
-            <span className={usageStatus.className}>
-              <UsageStatusIcon className="h-3.5 w-3.5" />
-              {usageStatus.label}
-            </span>
-
-            <span className="chip">
-              <IconActivity className="h-3.5 w-3.5" />
-              {planDisplay}
-            </span>
-
-            <span className="chip">
-              <IconShieldCheck className="h-3.5 w-3.5" />
-              {authModeDisplay}
-            </span>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            {onToggleMask && (
-              <IconButton
-                aria-label="Toggle Account Visibility"
-                onClick={onToggleMask}
-                title={masked ? "Show account details" : "Hide account details"}
-              >
-                {masked ? <IconEye className="h-4 w-4" /> : <IconEyeOff className="h-4 w-4" />}
-              </IconButton>
-            )}
-          </div>
-        </div>
-
-        <div className="min-w-0 border-b border-[var(--border-soft)] pb-3">
+        <div className="min-w-0 flex-1">
           {isEditing ? (
             <input
               ref={inputRef}
@@ -249,11 +189,11 @@ export function AccountCard({
             <button
               type="button"
               aria-label="Rename Account"
-              onClick={() => !masked && setIsEditing(true)}
-              disabled={masked || isRenaming}
+              onClick={() => setIsEditing(true)}
+              disabled={isRenaming}
               className="w-full cursor-pointer truncate text-left text-lg font-semibold text-[var(--text-primary)] transition-colors hover:text-[var(--accent-secondary)] disabled:cursor-default disabled:hover:text-[var(--text-primary)]"
             >
-              <BlurredText blur={masked}>{account.name}</BlurredText>
+              {account.name}
             </button>
           )}
 
@@ -265,16 +205,45 @@ export function AccountCard({
                 <IconShieldCheck className="h-4 w-4" />
               )}
               {account.email ? (
-                <span className="truncate">
-                  <BlurredText blur={masked}>{account.email}</BlurredText>
-                </span>
+                <span className="truncate">{account.email}</span>
               ) : (
                 <span className="text-muted">No email available</span>
               )}
             </div>
 
-            {creditsBalance ? <span className="mono-data shrink-0 text-xs text-secondary">Credits: {creditsBalance}</span> : null}
+            {creditsBalance ? (
+              <p className="mono-data shrink-0 text-xs text-secondary">Credits: {creditsBalance}</p>
+            ) : null}
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3">
+          {account.is_active ? (
+            <span className="chip chip-accent">
+              <IconCheck className="h-3.5 w-3.5" />
+              Active
+            </span>
+          ) : (
+            <span className="chip">
+              <IconActivity className="h-3.5 w-3.5" />
+              Standby
+            </span>
+          )}
+
+          <span className={usageStatus.className}>
+            <UsageStatusIcon className="h-3.5 w-3.5" />
+            {usageStatus.label}
+          </span>
+
+          <span className="chip">
+            <IconActivity className="h-3.5 w-3.5" />
+            {planDisplay}
+          </span>
+
+          <span className="chip">
+            <IconShieldCheck className="h-3.5 w-3.5" />
+            {authModeDisplay}
+          </span>
         </div>
       </header>
 

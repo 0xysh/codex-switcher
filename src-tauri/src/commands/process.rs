@@ -76,8 +76,9 @@ fn find_codex_processes() -> anyhow::Result<Vec<u32>> {
                         || command.starts_with("codex ");
 
                     // Skip our own app
-                    let is_switcher =
-                        command.contains("codex-switcher") || command.contains("Codex Switcher");
+                    let is_switcher = command.contains("codex-switcher")
+                        || command.contains("Codex Switcher")
+                        || command.contains("Codex Usage Inspector");
 
                     if is_codex && !is_switcher {
                         if let Ok(pid) = parts[0].parse::<u32>() {

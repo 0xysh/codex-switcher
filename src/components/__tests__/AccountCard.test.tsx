@@ -21,7 +21,6 @@ it("uses the same controls layout for active and inactive cards without switch C
         onRefresh={async () => {}}
         onReconnect={async () => {}}
         onRename={async () => {}}
-        onToggleMask={() => {}}
       />
 
       <AccountCard
@@ -39,7 +38,6 @@ it("uses the same controls layout for active and inactive cards without switch C
         onRefresh={async () => {}}
         onReconnect={async () => {}}
         onRename={async () => {}}
-        onToggleMask={() => {}}
       />
     </div>
   );
@@ -52,6 +50,7 @@ it("uses the same controls layout for active and inactive cards without switch C
     expect(within(card).getByRole("button", { name: /refresh usage/i })).toBeInTheDocument();
     expect(within(card).getByRole("button", { name: /reconnect/i })).toBeInTheDocument();
     expect(within(card).getByRole("button", { name: /remove account/i })).toBeInTheDocument();
+    expect(within(card).queryByRole("button", { name: /toggle account visibility/i })).not.toBeInTheDocument();
     expect(within(card).queryByText(/switch now/i)).not.toBeInTheDocument();
     expect(within(card).queryByText(/active now/i)).not.toBeInTheDocument();
   });
@@ -87,7 +86,6 @@ it("shows credits beside account identity when credits balance exists", () => {
       onDelete={() => {}}
       onRefresh={async () => {}}
       onRename={async () => {}}
-      onToggleMask={() => {}}
     />,
   );
 
@@ -111,7 +109,6 @@ it("hides reconnect action for api key accounts", () => {
       onRefresh={async () => {}}
       onReconnect={async () => {}}
       onRename={async () => {}}
-      onToggleMask={() => {}}
     />,
   );
 

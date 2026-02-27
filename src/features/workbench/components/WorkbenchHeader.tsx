@@ -66,7 +66,7 @@ export function WorkbenchHeader({
               <IconSparkles className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Codex Switcher</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Codex Usage Inspector</h1>
               <p className="mt-1 text-sm text-secondary">Monitor usage, session health, and account status.</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="chip">

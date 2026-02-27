@@ -13,7 +13,6 @@ import {
 } from "./features/workbench";
 import { useAccounts } from "./hooks/useAccounts";
 import { useTheme } from "./hooks/useTheme";
-import { useUiPreferences } from "./hooks/useUiPreferences";
 import "./App.css";
 
 function getErrorMessage(error: unknown): string {
@@ -40,7 +39,6 @@ function App() {
     cancelOAuthLogin,
   } = useAccounts();
 
-  const { maskedAccountIdSet, toggleMaskedAccountId } = useUiPreferences();
   const { themePreference, setThemePreference } = useTheme();
   const { processInfo } = useProcessMonitor();
   const { activity, pushActivity } = useActivityFeed();
@@ -164,16 +162,8 @@ function App() {
 
       <main id="main-content" className="mx-auto max-w-7xl space-y-5 px-4 pb-10 sm:px-6">
         <section className="space-y-5">
-          <CurrentCodexSessionCard
-            summary={currentSession}
-            onRefresh={refreshCurrentSession}
-            onSaveSnapshot={handleSaveSnapshot}
-            onImportSnapshot={openAddAccountModal}
-          />
-
           <AccountWorkspaceContent
             accounts={accounts}
-            maskedAccountIdSet={maskedAccountIdSet}
             loading={loading}
             error={error}
             onOpenAddAccount={openAddAccountModal}
@@ -183,7 +173,13 @@ function App() {
             onRefreshSingleUsage={refreshSingleUsage}
             onReconnectAccount={handleReconnect}
             onRename={renameAccount}
-            onToggleMask={toggleMaskedAccountId}
+          />
+
+          <CurrentCodexSessionCard
+            summary={currentSession}
+            onRefresh={refreshCurrentSession}
+            onSaveSnapshot={handleSaveSnapshot}
+            onImportSnapshot={openAddAccountModal}
           />
         </section>
 

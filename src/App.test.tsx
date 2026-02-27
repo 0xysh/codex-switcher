@@ -38,7 +38,7 @@ afterEach(() => {
 it("renders app title", async () => {
   render(<App />);
   expect(
-    await screen.findByRole("heading", { name: "Codex Switcher" })
+    await screen.findByRole("heading", { name: "Codex Usage Inspector" })
   ).toBeInTheDocument();
 });
 
@@ -122,7 +122,7 @@ it("clears delete confirmation message after timeout", async () => {
 it("removes inspector, shortcuts, quick switch, and search UI", async () => {
   render(<App />);
 
-  expect(screen.queryByText(/inspector/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/^inspector$/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/shortcuts/i)).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: /quick switch/i })

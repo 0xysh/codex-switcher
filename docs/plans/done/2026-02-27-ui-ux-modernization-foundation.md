@@ -7,11 +7,11 @@
 - [x] Blocker: Replaced placeholder test snippets with executable, type-safe examples.
 - [ ] Open risk (non-blocker): Virtualization may be unnecessary for current account counts; keep as conditional Phase 2 after profiling.
 
-# Codex Switcher UI/UX Modernization Foundation Implementation Plan
+# Codex Usage Inspector UI/UX Modernization Foundation Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Deliver an accessibility-first, maintainable UI foundation for Codex Switcher with robust tests, clear interaction semantics, and safe incremental rollout.
+**Goal:** Deliver an accessibility-first, maintainable UI foundation for Codex Usage Inspector with robust tests, clear interaction semantics, and safe incremental rollout.
 
 **Architecture:** Implement a frontend-only modernization in vertical slices: establish test infrastructure, introduce reusable UI primitives/tokens, refactor existing screens for semantics/focus/live-feedback, and lock quality with automated checks. Keep all Tauri invoke contracts and Rust-side payloads unchanged.
 
@@ -77,7 +77,7 @@ import App from "./App";
 
 it("renders app title", () => {
   render(<App />);
-  expect(screen.getByRole("heading", { name: "Codex Switcher" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Codex Usage Inspector" })).toBeInTheDocument();
 });
 ```
 
