@@ -50,7 +50,7 @@ pub fn get_codex_auth_file() -> Result<PathBuf> {
 pub fn switch_to_account(account: &StoredAccount) -> Result<()> {
     if !account_has_usable_credentials(account) {
         anyhow::bail!(
-            "Missing credentials in keychain for account '{}'. Re-add this account to restore access.",
+            "Missing stored credentials for account '{}'. Re-add this account to restore access.",
             account.name
         );
     }

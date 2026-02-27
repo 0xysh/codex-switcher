@@ -15,7 +15,7 @@
 - **Quick Switching** – Switch between accounts with a single click
 - **Usage Monitoring** – View real-time usage for both 5-hour and weekly limits
 - **Dual Login Mode** – OAuth authentication or import existing `auth.json` files
-- **Secure Credential Storage** – Account secrets are stored in the OS keychain; `accounts.json` keeps only redacted metadata
+- **Local Credential Storage** – Account credentials are stored in `~/.codex-switcher/accounts.json` with restrictive file permissions
 
 ## Installation
 
@@ -77,9 +77,9 @@ pnpm run check:ui
 
 ## Security Notes
 
-- Credentials are stored in the OS keychain (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux).
-- Existing plaintext credentials in `~/.codex-switcher/accounts.json` are migrated automatically on first load and then redacted on disk.
-- If an account metadata record exists but its keychain secret is missing, startup no longer fails globally. The app logs a security warning and continues loading available accounts.
+- Credentials are stored locally in `~/.codex-switcher/accounts.json`.
+- The app applies restrictive file permissions (`0600`) on Unix-like systems for this file.
+- Legacy placeholder records from previous keychain-backed builds are automatically removed on load.
 
 ## Disclaimer
 

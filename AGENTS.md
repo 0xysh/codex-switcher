@@ -10,7 +10,7 @@ Scope: whole repository unless a deeper AGENTS.md is added later.
 - Purpose: manage multiple Codex accounts and switch the active `~/.codex/auth.json`.
 - Frontend talks to backend through Tauri `invoke` commands.
 - Backend stores account metadata in `~/.codex-switcher/accounts.json`.
-- Sensitive credentials are stored in OS keychain (not plaintext metadata files).
+- Credentials are stored locally in `~/.codex-switcher/accounts.json`.
 
 ## Repository Map
 
@@ -21,7 +21,7 @@ Scope: whole repository unless a deeper AGENTS.md is added later.
 - `src/types/`: frontend types matching Rust serde payloads.
 - `src-tauri/src/`: Rust backend.
 - `src-tauri/src/commands/`: Tauri command handlers (frontend boundary).
-- `src-tauri/src/auth/`: account storage, switching, OAuth, keychain logic.
+- `src-tauri/src/auth/`: account storage, switching, and OAuth logic.
 - `src-tauri/src/api/`: remote usage API client code.
 - `.github/workflows/build.yml`: CI/release pipeline reference.
 - `docs/README.md`: documentation index and update policy.
@@ -160,9 +160,9 @@ Backend API contract rules:
 
 ## Security Requirements
 
-- Never store plaintext credentials in repo files or metadata JSON.
-- Use keychain helpers in `src-tauri/src/auth/secret_store.rs` for secrets.
-- Treat `accounts.json` as metadata only; secrets must remain redacted.
+- Never store credentials in repository files.
+- Store runtime credentials only in local user config (`~/.codex-switcher/accounts.json`).
+- Preserve restrictive file permissions logic for local credential files.
 - Never log tokens, API keys, refresh tokens, or full auth JSON contents.
 - Keep restrictive CSP in `src-tauri/tauri.conf.json`; do not loosen without justification.
 - Preserve restrictive file permissions logic for sensitive local files.

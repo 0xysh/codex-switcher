@@ -5,74 +5,24 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use crate::auth::secret_store::{delete_account_secret, load_account_secret, save_account_secret};
 use crate::types::{AccountsStore, AuthData, StoredAccount};
 
-const KEYCHAIN_PLACEHOLDER: &str = "__stored_in_keychain__";
+const LEGACY_KEYCHAIN_PLACEHOLDER: &str = "__stored_in_keychain__";
 
-fn is_placeholder_value(value: &str) -> bool {
-    value.is_empty() || value == KEYCHAIN_PLACEHOLDER
-}
-
-fn auth_data_has_real_secrets(auth_data: &AuthData) -> bool {
-    match auth_data {
-        AuthData::ApiKey { key } => !is_placeholder_value(key),
+fn account_has_legacy_placeholder(account: &StoredAccount) -> bool {
+    match &account.auth_data {
+        AuthData::ApiKey { key } => key == LEGACY_KEYCHAIN_PLACEHOLDER,
         AuthData::ChatGPT {
             id_token,
             access_token,
             refresh_token,
             ..
         } => {
-            !is_placeholder_value(id_token)
-                && !is_placeholder_value(access_token)
-                && !is_placeholder_value(refresh_token)
+            id_token == LEGACY_KEYCHAIN_PLACEHOLDER
+                || access_token == LEGACY_KEYCHAIN_PLACEHOLDER
+                || refresh_token == LEGACY_KEYCHAIN_PLACEHOLDER
         }
     }
-}
-
-fn redact_auth_data(auth_data: &mut AuthData) {
-    match auth_data {
-        AuthData::ApiKey { key } => {
-            *key = KEYCHAIN_PLACEHOLDER.to_string();
-        }
-        AuthData::ChatGPT {
-            id_token,
-            access_token,
-            refresh_token,
-            ..
-        } => {
-            *id_token = KEYCHAIN_PLACEHOLDER.to_string();
-            *access_token = KEYCHAIN_PLACEHOLDER.to_string();
-            *refresh_token = KEYCHAIN_PLACEHOLDER.to_string();
-        }
-    }
-}
-
-fn resolve_active_account_id(
-    accounts: &[StoredAccount],
-    current_active_id: Option<&str>,
-    accessible_account_ids: &[String],
-) -> Option<String> {
-    let is_accessible = |account_id: &str| {
-        accessible_account_ids
-            .iter()
-            .any(|accessible_id| accessible_id == account_id)
-    };
-
-    if let Some(active_id) = current_active_id {
-        if accounts.iter().any(|account| account.id == active_id) && is_accessible(active_id) {
-            return Some(active_id.to_string());
-        }
-    }
-
-    if let Some(accessible_id) = accessible_account_ids
-        .iter()
-        .find(|account_id| accounts.iter().any(|account| account.id == **account_id))
-    {
-        return Some(accessible_id.clone());
-    }
-
-    None
 }
 
 /// Get the path to the codex-switcher config directory
@@ -100,56 +50,33 @@ pub fn load_accounts() -> Result<AccountsStore> {
     let mut store: AccountsStore = serde_json::from_str(&content)
         .with_context(|| format!("Failed to parse accounts file: {}", path.display()))?;
 
-    let mut migrated_any_account = false;
-    let mut inaccessible_accounts: Vec<String> = Vec::new();
-    let current_active_id = store.active_account_id.clone();
-    let mut accessible_account_ids: Vec<String> = Vec::with_capacity(store.accounts.len());
+    let initial_len = store.accounts.len();
+    let mut removed_names: Vec<String> = Vec::new();
 
-    for account in &mut store.accounts {
-        match load_account_secret(&account.id).with_context(|| {
-            format!(
-                "Failed to load keychain credentials for account '{}'",
-                account.name
-            )
-        })? {
-            Some(auth_data) => {
-                account.auth_data = auth_data;
-                accessible_account_ids.push(account.id.clone());
-            }
-            None => {
-                if auth_data_has_real_secrets(&account.auth_data) {
-                    save_account_secret(&account.id, &account.auth_data).with_context(|| {
-                        format!(
-                            "Failed to migrate account '{}' credentials into keychain",
-                            account.name
-                        )
-                    })?;
-                    migrated_any_account = true;
-                    accessible_account_ids.push(account.id.clone());
-                } else {
-                    inaccessible_accounts.push(account.name.clone());
-                }
-            }
+    store.accounts.retain(|account| {
+        let keep = !account_has_legacy_placeholder(account);
+        if !keep {
+            removed_names.push(account.name.clone());
         }
-    }
+        keep
+    });
 
-    let previous_active_id = store.active_account_id.clone();
-    store.active_account_id = resolve_active_account_id(
-        &store.accounts,
-        current_active_id.as_deref(),
-        &accessible_account_ids,
-    );
-    let active_changed = store.active_account_id != previous_active_id;
+    if store.accounts.len() != initial_len {
+        if store.active_account_id.as_ref().is_some_and(|active_id| {
+            !store
+                .accounts
+                .iter()
+                .any(|account| account.id == *active_id)
+        }) {
+            store.active_account_id = store.accounts.first().map(|account| account.id.clone());
+        }
 
-    if migrated_any_account || active_changed {
         save_accounts(&store)?;
-    }
 
-    if !inaccessible_accounts.is_empty() {
         eprintln!(
-            "[Security] Loaded {} account metadata record(s) with missing keychain credentials: {}",
-            inaccessible_accounts.len(),
-            inaccessible_accounts.join(", ")
+            "[Compatibility] Removed {} legacy placeholder account record(s): {}",
+            removed_names.len(),
+            removed_names.join(", ")
         );
     }
 
@@ -160,19 +87,14 @@ pub fn load_accounts() -> Result<AccountsStore> {
 pub fn save_accounts(store: &AccountsStore) -> Result<()> {
     let path = get_accounts_file()?;
 
-    let mut redacted_store = store.clone();
-    for account in &mut redacted_store.accounts {
-        redact_auth_data(&mut account.auth_data);
-    }
-
     // Ensure the config directory exists
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .with_context(|| format!("Failed to create config directory: {}", parent.display()))?;
     }
 
-    let content = serde_json::to_string_pretty(&redacted_store)
-        .context("Failed to serialize accounts store")?;
+    let content =
+        serde_json::to_string_pretty(store).context("Failed to serialize accounts store")?;
 
     fs::write(&path, content)
         .with_context(|| format!("Failed to write accounts file: {}", path.display()))?;
@@ -197,13 +119,6 @@ pub fn add_account(account: StoredAccount) -> Result<StoredAccount> {
         anyhow::bail!("An account with name '{}' already exists", account.name);
     }
 
-    save_account_secret(&account.id, &account.auth_data).with_context(|| {
-        format!(
-            "Failed to securely store credentials for account '{}'",
-            account.name
-        )
-    })?;
-
     let account_clone = account.clone();
     store.accounts.push(account);
 
@@ -212,11 +127,7 @@ pub fn add_account(account: StoredAccount) -> Result<StoredAccount> {
         store.active_account_id = Some(account_clone.id.clone());
     }
 
-    if let Err(err) = save_accounts(&store) {
-        let _ = delete_account_secret(&account_clone.id);
-        return Err(err);
-    }
-
+    save_accounts(&store)?;
     Ok(account_clone)
 }
 
@@ -237,13 +148,6 @@ pub fn remove_account(account_id: &str) -> Result<()> {
     }
 
     save_accounts(&store)?;
-
-    if let Err(err) = delete_account_secret(account_id) {
-        eprintln!(
-            "[Security] Warning: failed to delete keychain credentials for account {account_id}: {err}"
-        );
-    }
-
     Ok(())
 }
 
@@ -259,68 +163,6 @@ pub fn set_active_account(account_id: &str) -> Result<()> {
     store.active_account_id = Some(account_id.to_string());
     save_accounts(&store)?;
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{resolve_active_account_id, StoredAccount};
-
-    fn make_account(id: &str, name: &str) -> StoredAccount {
-        let mut account = StoredAccount::new_api_key(name.to_string(), "sk-test".to_string());
-        account.id = id.to_string();
-        account
-    }
-
-    #[test]
-    fn keeps_existing_active_account_when_present() {
-        let accounts = vec![make_account("a-1", "One"), make_account("a-2", "Two")];
-
-        let active = resolve_active_account_id(
-            &accounts,
-            Some("a-2"),
-            &["a-1".to_string(), "a-2".to_string()],
-        );
-
-        assert_eq!(active.as_deref(), Some("a-2"));
-    }
-
-    #[test]
-    fn falls_back_to_first_accessible_account_when_active_missing() {
-        let accounts = vec![make_account("a-1", "One"), make_account("a-2", "Two")];
-
-        let active = resolve_active_account_id(
-            &accounts,
-            Some("a-9"),
-            &["a-1".to_string(), "a-2".to_string()],
-        );
-
-        assert_eq!(active.as_deref(), Some("a-1"));
-    }
-
-    #[test]
-    fn returns_none_when_no_accounts_available() {
-        let active = resolve_active_account_id(&[], Some("a-1"), &[]);
-
-        assert_eq!(active, None);
-    }
-
-    #[test]
-    fn falls_back_to_first_accessible_when_current_active_is_inaccessible() {
-        let accounts = vec![make_account("a-1", "One"), make_account("a-2", "Two")];
-
-        let active = resolve_active_account_id(&accounts, Some("a-1"), &["a-2".to_string()]);
-
-        assert_eq!(active.as_deref(), Some("a-2"));
-    }
-
-    #[test]
-    fn clears_active_account_when_no_accessible_accounts_exist() {
-        let accounts = vec![make_account("a-1", "One"), make_account("a-2", "Two")];
-
-        let active = resolve_active_account_id(&accounts, Some("a-1"), &[]);
-
-        assert_eq!(active, None);
-    }
 }
 
 /// Get an account by ID
