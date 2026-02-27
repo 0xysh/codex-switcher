@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import App from "./App";
 import { createUseAccountsMock } from "./test/mocks/useAccounts";
+import { invokeMock } from "./test/mocks/tauri";
 
 const useAccountsMock = vi.fn();
 
@@ -13,6 +14,21 @@ vi.mock("./hooks/useAccounts", () => ({
 
 beforeEach(() => {
   useAccountsMock.mockReturnValue(createUseAccountsMock());
+  invokeMock.mockImplementation(async (command: string) => {
+    if (command === "check_codex_processes") {
+      return {
+        count: 0,
+        can_switch: true,
+        pids: [],
+      };
+    }
+
+    if (command === "list_accounts" || command === "refresh_all_accounts_usage") {
+      return [];
+    }
+
+    return null;
+  });
 });
 
 afterEach(() => {
@@ -102,3 +118,42 @@ it("clears delete confirmation message after timeout", async () => {
     })
   ).not.toBeInTheDocument();
 }, 10000);
+
+it("removes inspector, shortcuts, quick switch, and search UI", async () => {
+  render(<App />);
+
+  expect(screen.queryByText(/inspector/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/shortcuts/i)).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: /quick switch/i })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByPlaceholderText(/search account name or email/i)
+  ).not.toBeInTheDocument();
+});
+
+it("keeps recent activity and process pid status visible", async () => {
+  invokeMock.mockImplementation(async (command: string) => {
+    if (command === "check_codex_processes") {
+      return {
+        count: 2,
+        can_switch: false,
+        pids: [111, 222],
+      };
+    }
+
+    if (command === "list_accounts" || command === "refresh_all_accounts_usage") {
+      return [];
+    }
+
+    return null;
+  });
+
+  render(<App />);
+
+  expect(await screen.findByText(/recent activity/i)).toBeInTheDocument();
+  expect(
+    await screen.findByText(/2 codex processes are still running/i)
+  ).toBeInTheDocument();
+  expect(await screen.findByText(/blocking pids: 111, 222/i)).toBeInTheDocument();
+});
