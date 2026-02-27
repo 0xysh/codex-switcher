@@ -75,32 +75,6 @@ fn resolve_active_account_id(
     None
 }
 
-fn verify_keychain_secret_with_loader<F>(
-    account_id: &str,
-    account_name: &str,
-    loader: F,
-) -> Result<()>
-where
-    F: FnOnce(&str) -> Result<Option<AuthData>>,
-{
-    match loader(account_id).with_context(|| {
-        format!(
-            "Failed to verify keychain credentials for account '{}'",
-            account_name
-        )
-    })? {
-        Some(_) => Ok(()),
-        None => anyhow::bail!(
-            "Failed to verify keychain credentials for account '{}': secret missing after write",
-            account_name
-        ),
-    }
-}
-
-fn verify_keychain_secret(account_id: &str, account_name: &str) -> Result<()> {
-    verify_keychain_secret_with_loader(account_id, account_name, load_account_secret)
-}
-
 /// Get the path to the codex-switcher config directory
 pub fn get_config_dir() -> Result<PathBuf> {
     let home = dirs::home_dir().context("Could not find home directory")?;
@@ -230,11 +204,6 @@ pub fn add_account(account: StoredAccount) -> Result<StoredAccount> {
         )
     })?;
 
-    if let Err(err) = verify_keychain_secret(&account.id, &account.name) {
-        let _ = delete_account_secret(&account.id);
-        return Err(err);
-    }
-
     let account_clone = account.clone();
     store.accounts.push(account);
 
@@ -294,9 +263,7 @@ pub fn set_active_account(account_id: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        resolve_active_account_id, verify_keychain_secret_with_loader, AuthData, StoredAccount,
-    };
+    use super::{resolve_active_account_id, StoredAccount};
 
     fn make_account(id: &str, name: &str) -> StoredAccount {
         let mut account = StoredAccount::new_api_key(name.to_string(), "sk-test".to_string());
@@ -353,36 +320,6 @@ mod tests {
         let active = resolve_active_account_id(&accounts, Some("a-1"), &[]);
 
         assert_eq!(active, None);
-    }
-
-    #[test]
-    fn keychain_verification_succeeds_when_secret_is_present() {
-        let outcome = verify_keychain_secret_with_loader("a-1", "One", |_| {
-            Ok(Some(AuthData::ApiKey {
-                key: "sk-test".to_string(),
-            }))
-        });
-
-        assert!(outcome.is_ok());
-    }
-
-    #[test]
-    fn keychain_verification_fails_when_secret_missing_after_write() {
-        let outcome = verify_keychain_secret_with_loader("a-1", "One", |_| Ok(None));
-
-        let error_text = outcome.expect_err("expected failure").to_string();
-        assert!(error_text.contains("secret missing after write"));
-    }
-
-    #[test]
-    fn keychain_verification_preserves_loader_error_context() {
-        let outcome = verify_keychain_secret_with_loader("a-1", "One", |_| {
-            Err(anyhow::anyhow!("backend unavailable"))
-        });
-
-        let error_text = format!("{:#}", outcome.expect_err("expected failure"));
-        assert!(error_text.contains("Failed to verify keychain credentials"));
-        assert!(error_text.contains("backend unavailable"));
     }
 }
 
