@@ -48,6 +48,33 @@ fn redact_auth_data(auth_data: &mut AuthData) {
     }
 }
 
+fn resolve_active_account_id(
+    accounts: &[StoredAccount],
+    current_active_id: Option<&str>,
+    accessible_account_ids: &[String],
+) -> Option<String> {
+    let is_accessible = |account_id: &str| {
+        accessible_account_ids
+            .iter()
+            .any(|accessible_id| accessible_id == account_id)
+    };
+
+    if let Some(active_id) = current_active_id {
+        if accounts.iter().any(|account| account.id == active_id) && is_accessible(active_id) {
+            return Some(active_id.to_string());
+        }
+    }
+
+    if let Some(accessible_id) = accessible_account_ids
+        .iter()
+        .find(|account_id| accounts.iter().any(|account| account.id == **account_id))
+    {
+        return Some(accessible_id.clone());
+    }
+
+    None
+}
+
 /// Get the path to the codex-switcher config directory
 pub fn get_config_dir() -> Result<PathBuf> {
     let home = dirs::home_dir().context("Could not find home directory")?;
@@ -74,12 +101,11 @@ pub fn load_accounts() -> Result<AccountsStore> {
         .with_context(|| format!("Failed to parse accounts file: {}", path.display()))?;
 
     let mut migrated_any_account = false;
-    let mut removed_accounts: Vec<String> = Vec::new();
-    let mut active_account_still_exists = false;
+    let mut inaccessible_accounts: Vec<String> = Vec::new();
     let current_active_id = store.active_account_id.clone();
-    let mut resolved_accounts = Vec::with_capacity(store.accounts.len());
+    let mut accessible_account_ids: Vec<String> = Vec::with_capacity(store.accounts.len());
 
-    for mut account in store.accounts.into_iter() {
+    for account in &mut store.accounts {
         match load_account_secret(&account.id).with_context(|| {
             format!(
                 "Failed to load keychain credentials for account '{}'",
@@ -88,10 +114,7 @@ pub fn load_accounts() -> Result<AccountsStore> {
         })? {
             Some(auth_data) => {
                 account.auth_data = auth_data;
-                if current_active_id.as_deref() == Some(account.id.as_str()) {
-                    active_account_still_exists = true;
-                }
-                resolved_accounts.push(account);
+                accessible_account_ids.push(account.id.clone());
             }
             None => {
                 if auth_data_has_real_secrets(&account.auth_data) {
@@ -102,32 +125,31 @@ pub fn load_accounts() -> Result<AccountsStore> {
                         )
                     })?;
                     migrated_any_account = true;
-                    if current_active_id.as_deref() == Some(account.id.as_str()) {
-                        active_account_still_exists = true;
-                    }
-                    resolved_accounts.push(account);
+                    accessible_account_ids.push(account.id.clone());
                 } else {
-                    removed_accounts.push(account.name.clone());
+                    inaccessible_accounts.push(account.name.clone());
                 }
             }
         }
     }
 
-    store.accounts = resolved_accounts;
+    let previous_active_id = store.active_account_id.clone();
+    store.active_account_id = resolve_active_account_id(
+        &store.accounts,
+        current_active_id.as_deref(),
+        &accessible_account_ids,
+    );
+    let active_changed = store.active_account_id != previous_active_id;
 
-    if !active_account_still_exists {
-        store.active_account_id = store.accounts.first().map(|account| account.id.clone());
-    }
-
-    if migrated_any_account || !removed_accounts.is_empty() {
+    if migrated_any_account || active_changed {
         save_accounts(&store)?;
     }
 
-    if !removed_accounts.is_empty() {
+    if !inaccessible_accounts.is_empty() {
         eprintln!(
-            "[Security] Removed {} account metadata record(s) with missing keychain credentials: {}",
-            removed_accounts.len(),
-            removed_accounts.join(", ")
+            "[Security] Loaded {} account metadata record(s) with missing keychain credentials: {}",
+            inaccessible_accounts.len(),
+            inaccessible_accounts.join(", ")
         );
     }
 
@@ -237,6 +259,68 @@ pub fn set_active_account(account_id: &str) -> Result<()> {
     store.active_account_id = Some(account_id.to_string());
     save_accounts(&store)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{resolve_active_account_id, StoredAccount};
+
+    fn make_account(id: &str, name: &str) -> StoredAccount {
+        let mut account = StoredAccount::new_api_key(name.to_string(), "sk-test".to_string());
+        account.id = id.to_string();
+        account
+    }
+
+    #[test]
+    fn keeps_existing_active_account_when_present() {
+        let accounts = vec![make_account("a-1", "One"), make_account("a-2", "Two")];
+
+        let active = resolve_active_account_id(
+            &accounts,
+            Some("a-2"),
+            &["a-1".to_string(), "a-2".to_string()],
+        );
+
+        assert_eq!(active.as_deref(), Some("a-2"));
+    }
+
+    #[test]
+    fn falls_back_to_first_accessible_account_when_active_missing() {
+        let accounts = vec![make_account("a-1", "One"), make_account("a-2", "Two")];
+
+        let active = resolve_active_account_id(
+            &accounts,
+            Some("a-9"),
+            &["a-1".to_string(), "a-2".to_string()],
+        );
+
+        assert_eq!(active.as_deref(), Some("a-1"));
+    }
+
+    #[test]
+    fn returns_none_when_no_accounts_available() {
+        let active = resolve_active_account_id(&[], Some("a-1"), &[]);
+
+        assert_eq!(active, None);
+    }
+
+    #[test]
+    fn falls_back_to_first_accessible_when_current_active_is_inaccessible() {
+        let accounts = vec![make_account("a-1", "One"), make_account("a-2", "Two")];
+
+        let active = resolve_active_account_id(&accounts, Some("a-1"), &["a-2".to_string()]);
+
+        assert_eq!(active.as_deref(), Some("a-2"));
+    }
+
+    #[test]
+    fn clears_active_account_when_no_accessible_accounts_exist() {
+        let accounts = vec![make_account("a-1", "One"), make_account("a-2", "Two")];
+
+        let active = resolve_active_account_id(&accounts, Some("a-1"), &[]);
+
+        assert_eq!(active, None);
+    }
 }
 
 /// Get an account by ID
