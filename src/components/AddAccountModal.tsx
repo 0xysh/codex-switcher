@@ -18,9 +18,12 @@ function getErrorMessage(error: unknown): string {
 function toUserSafeOAuthError(error: unknown): string {
   const message = getErrorMessage(error);
 
+  if (message.includes("already exists")) return "An account with this name already exists. Choose a different name.";
   if (message.includes("OAuth login timed out")) return "Login timed out. Please try again.";
   if (message.includes("No pending OAuth login")) return "Login session expired. Please start the login flow again.";
   if (message.includes("OAuth login cancelled")) return "Login was cancelled.";
+  if (message.includes("Invalid OAuth URL from backend")) return "Login configuration was invalid. Please retry.";
+  if (message.includes("Failed to write auth.json")) return "Unable to write ~/.codex/auth.json. Check permissions and try again.";
 
   return "Unable to complete login. Please try again.";
 }
@@ -37,6 +40,7 @@ function isTrustedOAuthUrl(url: string): boolean {
 interface AddAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
+  existingAccountNames?: string[];
   onImportFile: (path: string, name: string) => Promise<void>;
   onStartOAuth: (name: string) => Promise<{ auth_url: string }>;
   onCompleteOAuth: () => Promise<unknown>;
@@ -46,6 +50,7 @@ interface AddAccountModalProps {
 export function AddAccountModal({
   isOpen,
   onClose,
+  existingAccountNames = [],
   onImportFile,
   onStartOAuth,
   onCompleteOAuth,
@@ -69,6 +74,14 @@ export function AddAccountModal({
 
   const isPrimaryDisabled = loading || (activeTab === "oauth" && oauthPending);
   const isCancelDisabled = loading && activeTab === "import";
+
+  const hasDuplicateAccountName = useCallback(
+    (candidateName: string) => {
+      const normalizedName = candidateName.trim().toLowerCase();
+      return existingAccountNames.some((accountName) => accountName.trim().toLowerCase() === normalizedName);
+    },
+    [existingAccountNames],
+  );
 
   const oauthSteps = useMemo(() => {
     return [
@@ -130,6 +143,11 @@ export function AddAccountModal({
 
     if (!name.trim()) {
       setError("Please enter an account name.");
+      return;
+    }
+
+    if (hasDuplicateAccountName(name)) {
+      setError("An account with this name already exists. Choose a different name.");
       return;
     }
 
@@ -219,6 +237,11 @@ export function AddAccountModal({
       return;
     }
 
+    if (hasDuplicateAccountName(name)) {
+      setError("An account with this name already exists. Choose a different name.");
+      return;
+    }
+
     if (!filePath.trim()) {
       setError("Please select an auth.json file.");
       return;
@@ -231,7 +254,7 @@ export function AddAccountModal({
       await onImportFile(filePath.trim(), name.trim());
       requestClose();
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(toUserSafeOAuthError(err));
       setLoading(false);
     }
   };
