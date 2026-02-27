@@ -180,7 +180,7 @@ function App() {
         {loading && accounts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin h-10 w-10 border-2 border-gray-900 border-t-transparent rounded-full mb-4"></div>
-            <p className="text-gray-500">Loading accounts...</p>
+            <p className="text-gray-500">Loading accounts…</p>
           </div>
         ) : error ? (
           <div className="text-center py-20">
