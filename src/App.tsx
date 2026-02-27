@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAccounts } from "./hooks/useAccounts";
 import { AccountCard, AddAccountModal } from "./components";
+import { LiveRegion } from "./components/ui/LiveRegion";
 import type { CodexProcessInfo } from "./types";
 import "./App.css";
 
@@ -28,6 +29,7 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
   const [maskedAccounts, setMaskedAccounts] = useState<Set<string>>(new Set());
+  const [announcement, setAnnouncement] = useState<string | null>(null);
 
   const toggleMask = (accountId: string) => {
     setMaskedAccounts((prev) => {
@@ -77,6 +79,7 @@ function App() {
   const handleDelete = async (accountId: string) => {
     if (deleteConfirmId !== accountId) {
       setDeleteConfirmId(accountId);
+      setAnnouncement("Click delete again to confirm removal");
       setTimeout(() => setDeleteConfirmId(null), 3000);
       return;
     }
@@ -84,6 +87,7 @@ function App() {
     try {
       await deleteAccount(accountId);
       setDeleteConfirmId(null);
+      setAnnouncement("Account removed");
     } catch (err) {
       console.error("Failed to delete account:", err);
     }
@@ -95,6 +99,7 @@ function App() {
     try {
       await refreshUsage();
       setRefreshSuccess(true);
+      setAnnouncement("Usage refreshed successfully");
       setTimeout(() => setRefreshSuccess(false), 2000);
     } finally {
       setIsRefreshing(false);
@@ -107,6 +112,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <a
+        href="#main-content"
+        className="sr-only absolute left-4 top-4 rounded bg-gray-900 px-3 py-2 text-sm font-medium text-white focus:not-sr-only focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500"
+      >
+        Skip to Main Content
+      </a>
+
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-6 py-4">
@@ -151,7 +163,7 @@ function App() {
               >
                 {isRefreshing ? (
                   <span className="flex items-center gap-2">
-                    <span className="animate-spin">↻</span> Refreshing...
+                    <span className="animate-spin">↻</span> Refreshing…
                   </span>
                 ) : (
                   "↻ Refresh All"
@@ -169,7 +181,7 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main id="main-content" className="max-w-5xl mx-auto px-6 py-8">
         {loading && accounts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin h-10 w-10 border-2 border-gray-900 border-t-transparent rounded-full mb-4"></div>
@@ -271,6 +283,8 @@ function App() {
         onCompleteOAuth={completeOAuthLogin}
         onCancelOAuth={cancelOAuthLogin}
       />
+
+      <LiveRegion label="Global Announcements" message={announcement} />
     </div>
   );
 }

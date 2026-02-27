@@ -20,3 +20,15 @@ it("renders app title", async () => {
     await screen.findByRole("heading", { name: "Codex Switcher" })
   ).toBeInTheDocument();
 });
+
+it("provides a skip link and polite live region", async () => {
+  render(<App />);
+
+  expect(
+    await screen.findByRole("link", { name: /skip to main content/i })
+  ).toBeInTheDocument();
+
+  expect(
+    await screen.findByRole("status", { name: /global announcements/i })
+  ).toHaveAttribute("aria-live", "polite");
+});
