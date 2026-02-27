@@ -44,6 +44,22 @@ pnpm tauri build
 
 The built application will be in `src-tauri/target/release/bundle/`.
 
+## Development Quality Checks
+
+```bash
+# TypeScript strict check
+pnpm exec tsc --noEmit
+
+# Frontend tests
+pnpm test
+
+# Run one test file
+pnpm test -- src/components/__tests__/AccountCard.test.tsx
+
+# Full UI quality gate (types + tests + build)
+pnpm run check:ui
+```
+
 ## Security Notes
 
 - Credentials are stored in the OS keychain (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux).

@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { AccountInfo, UsageInfo, AccountWithUsage } from "../types";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export function useAccounts() {
   const [accounts, setAccounts] = useState<AccountWithUsage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +46,7 @@ export function useAccounts() {
         })
       );
     } catch (err) {
-      console.error("Failed to refresh usage:", err);
+      console.error("Failed to refresh usage:", getErrorMessage(err));
       throw err;
     }
   }, []);
@@ -61,7 +65,7 @@ export function useAccounts() {
         )
       );
     } catch (err) {
-      console.error("Failed to refresh single usage:", err);
+      console.error("Failed to refresh single usage:", getErrorMessage(err));
       setAccounts((prev) =>
         prev.map((a) =>
           a.id === accountId ? { ...a, usageLoading: false } : a
@@ -147,7 +151,7 @@ export function useAccounts() {
     try {
       await invoke("cancel_login");
     } catch (err) {
-      console.error("Failed to cancel login:", err);
+      console.error("Failed to cancel login:", getErrorMessage(err));
     }
   }, []);
 

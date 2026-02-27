@@ -1,9 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAccounts } from "./hooks/useAccounts";
+import { useUiPreferences } from "./hooks/useUiPreferences";
 import { AccountCard, AddAccountModal } from "./components";
+import { LiveRegion } from "./components/ui/LiveRegion";
 import type { CodexProcessInfo } from "./types";
 import "./App.css";
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 function App() {
   const {
@@ -27,26 +33,15 @@ function App() {
   const [processInfo, setProcessInfo] = useState<CodexProcessInfo | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
-  const [maskedAccounts, setMaskedAccounts] = useState<Set<string>>(new Set());
-
-  const toggleMask = (accountId: string) => {
-    setMaskedAccounts((prev) => {
-      const next = new Set(prev);
-      if (next.has(accountId)) {
-        next.delete(accountId);
-      } else {
-        next.add(accountId);
-      }
-      return next;
-    });
-  };
+  const [announcement, setAnnouncement] = useState<string | null>(null);
+  const { maskedAccountIdSet, toggleMaskedAccountId } = useUiPreferences();
 
   const checkProcesses = useCallback(async () => {
     try {
       const info = await invoke<CodexProcessInfo>("check_codex_processes");
       setProcessInfo(info);
     } catch (err) {
-      console.error("Failed to check processes:", err);
+      console.error("Failed to check processes:", getErrorMessage(err));
     }
   }, []);
 
@@ -68,7 +63,7 @@ function App() {
       setSwitchingId(accountId);
       await switchAccount(accountId);
     } catch (err) {
-      console.error("Failed to switch account:", err);
+      console.error("Failed to switch account:", getErrorMessage(err));
     } finally {
       setSwitchingId(null);
     }
@@ -77,15 +72,20 @@ function App() {
   const handleDelete = async (accountId: string) => {
     if (deleteConfirmId !== accountId) {
       setDeleteConfirmId(accountId);
-      setTimeout(() => setDeleteConfirmId(null), 3000);
+      setAnnouncement("Click delete again to confirm removal");
+      setTimeout(() => {
+        setDeleteConfirmId(null);
+        setAnnouncement(null);
+      }, 3000);
       return;
     }
 
     try {
       await deleteAccount(accountId);
       setDeleteConfirmId(null);
+      setAnnouncement("Account removed");
     } catch (err) {
-      console.error("Failed to delete account:", err);
+      console.error("Failed to delete account:", getErrorMessage(err));
     }
   };
 
@@ -95,7 +95,11 @@ function App() {
     try {
       await refreshUsage();
       setRefreshSuccess(true);
+      setAnnouncement("Usage refreshed successfully");
       setTimeout(() => setRefreshSuccess(false), 2000);
+    } catch (err) {
+      console.error("Failed to refresh usage:", getErrorMessage(err));
+      setAnnouncement("Failed to refresh usage");
     } finally {
       setIsRefreshing(false);
     }
@@ -107,6 +111,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <a
+        href="#main-content"
+        className="sr-only absolute left-4 top-4 rounded bg-gray-900 px-3 py-2 text-sm font-medium text-white focus:not-sr-only focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500"
+      >
+        Skip to Main Content
+      </a>
+
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-6 py-4">
@@ -151,7 +162,7 @@ function App() {
               >
                 {isRefreshing ? (
                   <span className="flex items-center gap-2">
-                    <span className="animate-spin">↻</span> Refreshing...
+                    <span className="animate-spin">↻</span> Refreshing…
                   </span>
                 ) : (
                   "↻ Refresh All"
@@ -169,11 +180,11 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main id="main-content" className="max-w-5xl mx-auto px-6 py-8">
         {loading && accounts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin h-10 w-10 border-2 border-gray-900 border-t-transparent rounded-full mb-4"></div>
-            <p className="text-gray-500">Loading accounts...</p>
+            <p className="text-gray-500">Loading accounts…</p>
           </div>
         ) : error ? (
           <div className="text-center py-20">
@@ -214,8 +225,8 @@ function App() {
                   onRename={(newName) => renameAccount(activeAccount.id, newName)}
                   switching={switchingId === activeAccount.id}
                   switchDisabled={hasRunningProcesses ?? false}
-                  masked={maskedAccounts.has(activeAccount.id)}
-                  onToggleMask={() => toggleMask(activeAccount.id)}
+                  masked={maskedAccountIdSet.has(activeAccount.id)}
+                  onToggleMask={() => toggleMaskedAccountId(activeAccount.id)}
                 />
               </section>
             )}
@@ -237,8 +248,8 @@ function App() {
                       onRename={(newName) => renameAccount(account.id, newName)}
                       switching={switchingId === account.id}
                       switchDisabled={hasRunningProcesses ?? false}
-                      masked={maskedAccounts.has(account.id)}
-                      onToggleMask={() => toggleMask(account.id)}
+                      masked={maskedAccountIdSet.has(account.id)}
+                      onToggleMask={() => toggleMaskedAccountId(account.id)}
                     />
                   ))}
                 </div>
@@ -271,6 +282,8 @@ function App() {
         onCompleteOAuth={completeOAuthLogin}
         onCancelOAuth={cancelOAuthLogin}
       />
+
+      <LiveRegion label="Global Announcements" message={announcement} />
     </div>
   );
 }

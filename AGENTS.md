@@ -53,6 +53,7 @@ Use the following checks before committing:
 
 - TypeScript strict check: `pnpm exec tsc --noEmit`
 - Frontend build check: `pnpm build`
+- Frontend quality gate: `pnpm run check:ui`
 - Rust format check: `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
 - Rust formatter apply: `cargo fmt --manifest-path src-tauri/Cargo.toml`
 - Rust compile check: `cargo check --manifest-path src-tauri/Cargo.toml`
@@ -67,8 +68,14 @@ Security/dependency checks:
 
 Current status:
 
-- No frontend test runner is configured.
+- Frontend test runner is configured with Vitest + Testing Library.
 - No Rust tests are currently present in the codebase.
+
+Frontend tests:
+
+- Run all frontend tests: `pnpm test`
+- Run frontend tests in watch mode: `pnpm test:watch`
+- Run a single frontend test file: `pnpm test -- src/components/__tests__/AccountCard.test.tsx`
 
 Still, use standard Rust commands when adding tests:
 
