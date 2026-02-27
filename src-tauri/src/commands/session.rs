@@ -55,6 +55,29 @@ mod tests {
     }
 
     #[test]
+    fn marks_summary_invalid_when_tokens_are_empty() {
+        let auth = AuthDotJson {
+            openai_api_key: None,
+            tokens: Some(TokenData {
+                id_token: "".to_string(),
+                access_token: "access-token".to_string(),
+                refresh_token: "refresh-token".to_string(),
+                account_id: None,
+            }),
+            last_refresh: Some(Utc::now()),
+        };
+
+        let summary = derive_summary_from_auth(
+            &auth,
+            "/tmp/.codex/auth.json".to_string(),
+            "/tmp/.codex-switcher/snapshots".to_string(),
+            None,
+        );
+
+        assert!(matches!(summary.status, CurrentAuthStatus::Invalid));
+    }
+
+    #[test]
     fn snapshot_filename_changes_on_collision_index() {
         let now = Utc::now();
         let first = build_snapshot_filename(now, 0);

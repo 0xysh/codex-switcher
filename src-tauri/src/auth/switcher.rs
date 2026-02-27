@@ -18,6 +18,10 @@ fn is_placeholder_value(value: &str) -> bool {
     value.is_empty() || value == KEYCHAIN_PLACEHOLDER
 }
 
+fn has_non_empty_value(value: Option<&str>) -> bool {
+    value.is_some_and(|item| !item.trim().is_empty())
+}
+
 fn account_has_usable_credentials(account: &StoredAccount) -> bool {
     match &account.auth_data {
         AuthData::ApiKey { key } => !is_placeholder_value(key),
@@ -207,11 +211,7 @@ pub(crate) fn derive_summary_from_auth(
     snapshots_dir_path: String,
     last_modified_at: Option<DateTime<Utc>>,
 ) -> CurrentAuthSummary {
-    if auth
-        .openai_api_key
-        .as_deref()
-        .is_some_and(|value| !value.is_empty())
-    {
+    if has_non_empty_value(auth.openai_api_key.as_deref()) {
         return CurrentAuthSummary {
             status: CurrentAuthStatus::Ready,
             auth_mode: Some(AuthMode::ApiKey),
@@ -225,6 +225,22 @@ pub(crate) fn derive_summary_from_auth(
     }
 
     if let Some(tokens) = &auth.tokens {
+        if tokens.id_token.trim().is_empty()
+            || tokens.access_token.trim().is_empty()
+            || tokens.refresh_token.trim().is_empty()
+        {
+            return CurrentAuthSummary {
+                status: CurrentAuthStatus::Invalid,
+                auth_mode: None,
+                email: None,
+                plan_type: None,
+                auth_file_path,
+                snapshots_dir_path,
+                last_modified_at,
+                message: Some("auth.json contains empty token values".to_string()),
+            };
+        }
+
         let (email, plan_type) = parse_id_token_claims(&tokens.id_token);
         return CurrentAuthSummary {
             status: CurrentAuthStatus::Ready,

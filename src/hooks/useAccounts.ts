@@ -196,7 +196,13 @@ export function useAccounts() {
 
   const saveCurrentSessionSnapshot = useCallback(async () => {
     const snapshotPath = await invoke<string>("create_auth_snapshot");
-    await refreshCurrentSession();
+
+    try {
+      await refreshCurrentSession();
+    } catch (err) {
+      console.error("Failed to refresh current session after snapshot:", getErrorMessage(err));
+    }
+
     return snapshotPath;
   }, [refreshCurrentSession]);
 
