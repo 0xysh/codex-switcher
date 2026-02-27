@@ -43,3 +43,16 @@ export interface CodexProcessInfo {
   can_switch: boolean;
   pids: number[];
 }
+
+export type CurrentAuthStatus = "ready" | "missing" | "invalid" | "error";
+
+export interface CurrentAuthSummary {
+  status: CurrentAuthStatus;
+  auth_mode: AuthMode | null;
+  email: string | null;
+  plan_type: string | null;
+  auth_file_path: string;
+  snapshots_dir_path: string;
+  last_modified_at: string | null;
+  message: string | null;
+}

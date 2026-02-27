@@ -242,6 +242,29 @@ pub struct OAuthLoginInfo {
     pub callback_port: u16,
 }
 
+/// Current Codex auth.json session metadata (no token values)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CurrentAuthSummary {
+    pub status: CurrentAuthStatus,
+    pub auth_mode: Option<AuthMode>,
+    pub email: Option<String>,
+    pub plan_type: Option<String>,
+    pub auth_file_path: String,
+    pub snapshots_dir_path: String,
+    pub last_modified_at: Option<DateTime<Utc>>,
+    pub message: Option<String>,
+}
+
+/// Current auth summary status
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CurrentAuthStatus {
+    Ready,
+    Missing,
+    Invalid,
+    Error,
+}
+
 // ============================================================================
 // API Response types (from Codex backend)
 // ============================================================================
