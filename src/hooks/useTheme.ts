@@ -1,9 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import {
+  applyRandomTheme,
+  buildRandomTheme,
+  clearRandomThemeOverrides,
+  RANDOM_THEME_STORAGE_KEY,
+  readStoredRandomTheme,
+  type RandomThemePalette,
+  type ResolvedTheme,
+} from "./themeRandomizer";
 
 export type ThemePreference = "light" | "dark" | "system";
-export type ResolvedTheme = "light" | "dark";
+export type { ResolvedTheme };
 
-const THEME_STORAGE_KEY = "codex-switcher:theme";
+export const THEME_STORAGE_KEY = "codex-switcher:theme";
 
 function readStoredTheme(): ThemePreference {
   if (typeof window === "undefined" || !window.localStorage) {
@@ -18,17 +28,7 @@ function readStoredTheme(): ThemePreference {
   return "system";
 }
 
-function getSystemTheme(): ResolvedTheme {
-  if (typeof window === "undefined" || !window.matchMedia) {
-    return "light";
-  }
-
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
-function applyTheme(theme: ResolvedTheme) {
+function applyFixedTheme(theme: ResolvedTheme) {
   if (typeof document === "undefined") {
     return;
   }
@@ -38,16 +38,26 @@ function applyTheme(theme: ResolvedTheme) {
 }
 
 export function useTheme() {
-  const [themePreference, setThemePreference] = useState<ThemePreference>(() => {
-    return readStoredTheme();
-  });
-  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => {
-    return getSystemTheme();
-  });
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => readStoredTheme());
+  const [randomTheme, setRandomTheme] = useState<RandomThemePalette | null>(() => readStoredRandomTheme());
 
   const resolvedTheme: ResolvedTheme = useMemo(() => {
-    return themePreference === "system" ? systemTheme : themePreference;
-  }, [themePreference, systemTheme]);
+    if (themePreference === "system") {
+      return randomTheme?.baseTheme ?? "light";
+    }
+
+    return themePreference;
+  }, [themePreference, randomTheme]);
+
+  const setThemePreference = useCallback((theme: ThemePreference) => {
+    if (theme === "system") {
+      setThemePreferenceState("system");
+      setRandomTheme(buildRandomTheme());
+      return;
+    }
+
+    setThemePreferenceState(theme);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.localStorage) {
@@ -58,29 +68,26 @@ export function useTheme() {
   }, [themePreference]);
 
   useEffect(() => {
-    applyTheme(resolvedTheme);
-  }, [resolvedTheme]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) {
+    if (typeof window === "undefined" || !window.localStorage || !randomTheme) {
       return;
     }
 
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => {
-      setSystemTheme(mediaQuery.matches ? "dark" : "light");
-    };
+    window.localStorage.setItem(RANDOM_THEME_STORAGE_KEY, JSON.stringify(randomTheme));
+  }, [randomTheme]);
 
-    onChange();
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", onChange);
-      return () => mediaQuery.removeEventListener("change", onChange);
+  useEffect(() => {
+    if (themePreference === "system") {
+      const activeTheme = randomTheme ?? buildRandomTheme();
+      if (!randomTheme) {
+        setRandomTheme(activeTheme);
+      }
+      applyRandomTheme(activeTheme);
+      return;
     }
 
-    mediaQuery.addListener(onChange);
-    return () => mediaQuery.removeListener(onChange);
-  }, []);
+    clearRandomThemeOverrides();
+    applyFixedTheme(resolvedTheme);
+  }, [randomTheme, resolvedTheme, themePreference]);
 
   return {
     themePreference,
@@ -88,5 +95,3 @@ export function useTheme() {
     setThemePreference,
   };
 }
-
-export { THEME_STORAGE_KEY };

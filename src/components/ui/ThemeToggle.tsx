@@ -1,7 +1,7 @@
 import type { ComponentType, KeyboardEvent, SVGProps } from "react";
 
 import type { ThemePreference } from "../../hooks/useTheme";
-import { IconMonitor, IconMoon, IconSun } from "./icons";
+import { IconMoon, IconSparkles, IconSun } from "./icons";
 
 interface ThemeToggleProps {
   value: ThemePreference;
@@ -16,7 +16,7 @@ const OPTIONS: Array<{
 }> = [
   { value: "light", label: "Light", icon: IconSun },
   { value: "dark", label: "Dark", icon: IconMoon },
-  { value: "system", label: "System", icon: IconMonitor },
+  { value: "system", label: "Random", icon: IconSparkles },
 ];
 
 export function ThemeToggle({ value, onChange, className }: ThemeToggleProps) {

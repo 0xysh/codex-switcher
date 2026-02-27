@@ -229,12 +229,6 @@ export function AccountWorkspaceContent({
 
   return (
     <section className="reveal-rise" aria-label="Accounts Workspace">
-      {orderedAccounts.length > 1 ? (
-        <p className="mb-2 text-xs text-muted">
-          Drag account handles to reorder cards. Order is saved for future sessions.
-        </p>
-      ) : null}
-
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
