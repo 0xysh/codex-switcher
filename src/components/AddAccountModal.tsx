@@ -4,12 +4,34 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 import { useDialogFocusTrap } from "../hooks/useDialogFocusTrap";
+import { AccountNameField } from "./add-account/AccountNameField";
 import { AuthMethodTabs } from "./add-account/AuthMethodTabs";
+import { ImportCredentialsPanel } from "./add-account/ImportCredentialsPanel";
+import { OAuthFlowPanel } from "./add-account/OAuthFlowPanel";
 import type { AddAccountTab } from "./add-account/AuthMethodTabs";
-import { Button, IconButton, IconCheck, IconShieldCheck, IconX } from "./ui";
+import { Button, IconButton, IconShieldCheck, IconX } from "./ui";
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function toUserSafeOAuthError(error: unknown): string {
+  const message = getErrorMessage(error);
+
+  if (message.includes("OAuth login timed out")) return "Login timed out. Please try again.";
+  if (message.includes("No pending OAuth login")) return "Login session expired. Please start the login flow again.";
+  if (message.includes("OAuth login cancelled")) return "Login was cancelled.";
+
+  return "Unable to complete login. Please try again.";
+}
+
+function isTrustedOAuthUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && parsed.hostname === "auth.openai.com";
+  } catch {
+    return false;
+  }
 }
 
 interface AddAccountModalProps {
@@ -38,8 +60,15 @@ export function AddAccountModal({
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const oauthAttemptRef = useRef(0);
   const oauthInFlightRef = useRef(false);
+  const oauthPendingRef = useRef(false);
+
+  const setOauthPendingState = (value: boolean) => {
+    oauthPendingRef.current = value;
+    setOauthPending(value);
+  };
 
   const isPrimaryDisabled = loading || (activeTab === "oauth" && oauthPending);
+  const isCancelDisabled = loading && activeTab === "import";
 
   const oauthSteps = useMemo(() => {
     return [
@@ -54,22 +83,24 @@ export function AddAccountModal({
     setFilePath("");
     setError(null);
     setLoading(false);
-    setOauthPending(false);
+    setOauthPendingState(false);
     setActiveTab("oauth");
   };
 
   const requestClose = useCallback(() => {
+    const shouldCancel = oauthPendingRef.current || oauthInFlightRef.current;
+
     oauthAttemptRef.current += 1;
     oauthInFlightRef.current = false;
 
-    if (oauthPending) {
+    if (shouldCancel) {
       void onCancelOAuth().catch((err) => {
-        console.error("Failed to cancel login:", getErrorMessage(err));
+        console.error("Failed to cancel login.", getErrorMessage(err));
       });
     }
     resetForm();
     onClose();
-  }, [oauthPending, onCancelOAuth, onClose]);
+  }, [onCancelOAuth, onClose]);
 
   const handleTabChange = useCallback(
     (nextTab: AddAccountTab) => {
@@ -78,9 +109,9 @@ export function AddAccountModal({
         oauthInFlightRef.current = false;
 
         void onCancelOAuth().catch((err) => {
-          console.error("Failed to cancel login:", getErrorMessage(err));
+          console.error("Failed to cancel login.", getErrorMessage(err));
         });
-        setOauthPending(false);
+        setOauthPendingState(false);
         setLoading(false);
       }
 
@@ -115,15 +146,23 @@ export function AddAccountModal({
       const info = await onStartOAuth(name.trim());
 
       if (oauthAttemptRef.current !== oauthAttempt) {
+        void onCancelOAuth().catch((cancelErr) => {
+          console.error("Failed to cancel login.", getErrorMessage(cancelErr));
+        });
         return;
       }
 
       oauthStarted = true;
-      setOauthPending(true);
+
+      if (!isTrustedOAuthUrl(info.auth_url)) {
+        throw new Error("Invalid OAuth URL from backend");
+      }
+
+      setOauthPendingState(true);
       setLoading(false);
 
       void openUrl(info.auth_url).catch((openErr) => {
-        console.error("Failed to open browser:", getErrorMessage(openErr));
+        console.error("Failed to open browser.", getErrorMessage(openErr));
       });
 
       await onCompleteOAuth();
@@ -140,12 +179,12 @@ export function AddAccountModal({
 
       if (oauthStarted) {
         void onCancelOAuth().catch((cancelErr) => {
-          console.error("Failed to cancel login:", getErrorMessage(cancelErr));
+          console.error("Failed to cancel login.", getErrorMessage(cancelErr));
         });
       }
-      setError(getErrorMessage(err));
+      setError(toUserSafeOAuthError(err));
       setLoading(false);
-      setOauthPending(false);
+      setOauthPendingState(false);
     } finally {
       if (oauthAttemptRef.current === oauthAttempt) {
         oauthInFlightRef.current = false;
@@ -224,7 +263,7 @@ export function AddAccountModal({
                 Secrets stay encrypted in your system keychain
               </p>
             </div>
-            <IconButton aria-label="Close Add Account Modal" onClick={requestClose}>
+            <IconButton aria-label="Close Add Account Modal" onClick={requestClose} disabled={isCancelDisabled}>
               <IconX className="h-4 w-4" />
             </IconButton>
           </div>
@@ -233,75 +272,12 @@ export function AddAccountModal({
         </header>
 
         <div className="space-y-5 px-6 py-5">
-          <div>
-            <label htmlFor="account-name" className="mb-2 block text-sm font-semibold text-secondary">
-              Account Name
-            </label>
-            <input
-              id="account-name"
-              name="accountName"
-              type="text"
-              value={name}
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="e.g. Production Team…"
-              className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-4 py-3 text-sm text-[var(--text-primary)]"
-            />
-            <p className="mt-2 text-xs text-muted">This label is local to this app and can be changed later.</p>
-          </div>
+          <AccountNameField name={name} onChange={setName} />
 
           {activeTab === "oauth" ? (
-            <section
-              id="add-account-panel-oauth"
-              role="tabpanel"
-              aria-labelledby="add-account-tab-oauth"
-              className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-4"
-            >
-              <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">OAuth flow</h3>
-              <ol className="space-y-2 text-sm text-secondary">
-                {oauthSteps.map((step, index) => (
-                  <li key={step.id} className="flex items-start gap-2">
-                    <span
-                      className={`mt-[2px] inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs ${
-                        step.done
-                          ? "border-[var(--success-border)] bg-[var(--success-soft)] text-[var(--success)]"
-                          : "border-[var(--border-soft)] bg-[var(--bg-surface)] text-secondary"
-                      }`}
-                    >
-                      {step.done ? <IconCheck className="h-3 w-3" /> : index + 1}
-                    </span>
-                    <span>{step.label}</span>
-                  </li>
-                ))}
-              </ol>
-
-              {oauthPending && (
-                <div className="mt-4 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-2 text-sm text-[var(--accent-primary)]">
-                  Waiting for browser login… Complete authentication to finish setup.
-                </div>
-              )}
-            </section>
+            <OAuthFlowPanel oauthPending={oauthPending} oauthSteps={oauthSteps} />
           ) : (
-            <section
-              id="add-account-panel-import"
-              role="tabpanel"
-              aria-labelledby="add-account-tab-import"
-              className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-4"
-            >
-              <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Import credentials</h3>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="mono-data min-h-11 flex-1 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3 py-3 text-xs text-secondary">
-                  {filePath || "No file selected"}
-                </div>
-                <Button variant="secondary" onClick={() => void handleSelectFile()}>
-                  Browse…
-                </Button>
-              </div>
-              <p className="mt-3 text-xs text-muted">
-                Import only from trusted local files. Secrets are moved into your system keychain.
-              </p>
-            </section>
+            <ImportCredentialsPanel filePath={filePath} onSelectFile={() => void handleSelectFile()} />
           )}
 
           {error && (
@@ -316,7 +292,7 @@ export function AddAccountModal({
         </div>
 
         <footer className="flex flex-col-reverse gap-3 border-t border-[var(--border-soft)] px-6 py-5 sm:flex-row sm:justify-end">
-          <Button variant="ghost" onClick={requestClose}>
+          <Button variant="ghost" onClick={requestClose} disabled={isCancelDisabled}>
             Cancel
           </Button>
           <Button

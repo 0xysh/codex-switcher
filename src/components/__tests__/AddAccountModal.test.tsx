@@ -11,7 +11,7 @@ it("has accessible close button and labeled account name input", () => {
       isOpen
       onClose={vi.fn()}
       onImportFile={vi.fn(async () => {})}
-      onStartOAuth={vi.fn(async () => ({ auth_url: "https://example.com" }))}
+      onStartOAuth={vi.fn(async () => ({ auth_url: "https://auth.openai.com/oauth/authorize?state=test" }))}
       onCompleteOAuth={vi.fn(async () => ({}))}
       onCancelOAuth={vi.fn(async () => {})}
     />
@@ -35,7 +35,7 @@ it("does not stay stuck in oauth pending state after cancellation", async () => 
       isOpen
       onClose={vi.fn()}
       onImportFile={vi.fn(async () => {})}
-      onStartOAuth={vi.fn(async () => ({ auth_url: "https://example.com" }))}
+      onStartOAuth={vi.fn(async () => ({ auth_url: "https://auth.openai.com/oauth/authorize?state=test" }))}
       onCompleteOAuth={vi.fn(() => new Promise<unknown>(() => {}))}
       onCancelOAuth={onCancelOAuth}
     />
@@ -67,7 +67,7 @@ it("continues oauth completion when browser opener stays pending", async () => {
       isOpen
       onClose={onClose}
       onImportFile={vi.fn(async () => {})}
-      onStartOAuth={vi.fn(async () => ({ auth_url: "https://example.com" }))}
+      onStartOAuth={vi.fn(async () => ({ auth_url: "https://auth.openai.com/oauth/authorize?state=test" }))}
       onCompleteOAuth={onCompleteOAuth}
       onCancelOAuth={vi.fn(async () => {})}
     />,
@@ -102,4 +102,26 @@ it("ignores duplicate oauth starts while a login attempt is already in flight", 
   await user.click(loginButton);
 
   expect(onStartOAuth).toHaveBeenCalledTimes(1);
+});
+
+it("rejects untrusted oauth URLs before browser launch", async () => {
+  const onCompleteOAuth = vi.fn(async () => ({}));
+
+  const user = userEvent.setup();
+  render(
+    <AddAccountModal
+      isOpen
+      onClose={vi.fn()}
+      onImportFile={vi.fn(async () => {})}
+      onStartOAuth={vi.fn(async () => ({ auth_url: "https://example.com/oauth/authorize" }))}
+      onCompleteOAuth={onCompleteOAuth}
+      onCancelOAuth={vi.fn(async () => {})}
+    />,
+  );
+
+  await user.type(screen.getByLabelText(/account name/i), "Work Account");
+  await user.click(screen.getByRole("button", { name: /login with chatgpt/i }));
+
+  expect(onCompleteOAuth).not.toHaveBeenCalled();
+  expect(await screen.findByText(/unable to complete login\. please try again\./i)).toBeInTheDocument();
 });
