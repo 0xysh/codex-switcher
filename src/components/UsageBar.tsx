@@ -52,11 +52,13 @@ function RateLimitBar({
     <div className="space-y-1">
       <div className="flex justify-between text-xs text-gray-500">
         <span>{label} {windowLabel && `(${windowLabel})`}</span>
-        <span>{remainingPercent.toFixed(0)}% left{resetLabel && ` • resets ${resetLabel}`}</span>
+        <span className="tabular-nums">
+          {remainingPercent.toFixed(0)}% left{resetLabel && ` • resets ${resetLabel}`}
+        </span>
       </div>
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className={`h-full transition-all duration-300 ${colorClass}`}
+          className={`h-full transition-[width] duration-300 motion-reduce:transition-none ${colorClass}`}
           style={{ width: `${Math.min(remainingPercent, 100)}%` }}
         ></div>
       </div>
@@ -68,10 +70,10 @@ export function UsageBar({ usage, loading }: UsageBarProps) {
   if (loading) {
     return (
       <div className="space-y-2">
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden animate-pulse">
+        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden animate-pulse motion-reduce:animate-none">
           <div className="h-full w-2/3 bg-gray-200"></div>
         </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden animate-pulse">
+        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden animate-pulse motion-reduce:animate-none">
           <div className="h-full w-1/2 bg-gray-200"></div>
         </div>
       </div>
