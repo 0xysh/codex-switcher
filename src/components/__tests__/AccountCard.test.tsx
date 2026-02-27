@@ -19,6 +19,7 @@ it("uses the same controls layout for active and inactive cards without switch C
         }}
         onDelete={() => {}}
         onRefresh={async () => {}}
+        onReconnect={async () => {}}
         onRename={async () => {}}
         onToggleMask={() => {}}
       />
@@ -36,6 +37,7 @@ it("uses the same controls layout for active and inactive cards without switch C
         }}
         onDelete={() => {}}
         onRefresh={async () => {}}
+        onReconnect={async () => {}}
         onRename={async () => {}}
         onToggleMask={() => {}}
       />
@@ -48,6 +50,7 @@ it("uses the same controls layout for active and inactive cards without switch C
   cards.forEach((card) => {
     expect(within(card).getByRole("button", { name: /rename account/i })).toBeInTheDocument();
     expect(within(card).getByRole("button", { name: /refresh usage/i })).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: /reconnect/i })).toBeInTheDocument();
     expect(within(card).getByRole("button", { name: /remove account/i })).toBeInTheDocument();
     expect(within(card).queryByText(/switch now/i)).not.toBeInTheDocument();
     expect(within(card).queryByText(/active now/i)).not.toBeInTheDocument();
@@ -89,4 +92,28 @@ it("shows credits beside account identity when credits balance exists", () => {
   );
 
   expect(screen.getByText("Credits: 17.25")).toBeInTheDocument();
+});
+
+it("hides reconnect action for api key accounts", () => {
+  render(
+    <AccountCard
+      account={{
+        id: "acc-api",
+        name: "API Account",
+        email: null,
+        plan_type: null,
+        auth_mode: "api_key",
+        is_active: false,
+        created_at: new Date().toISOString(),
+        last_used_at: null,
+      }}
+      onDelete={() => {}}
+      onRefresh={async () => {}}
+      onReconnect={async () => {}}
+      onRename={async () => {}}
+      onToggleMask={() => {}}
+    />,
+  );
+
+  expect(screen.queryByRole("button", { name: /reconnect/i })).not.toBeInTheDocument();
 });

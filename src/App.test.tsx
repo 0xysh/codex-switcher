@@ -152,8 +152,6 @@ it("keeps recent activity and process pid status visible", async () => {
   render(<App />);
 
   expect(await screen.findByText(/recent activity/i)).toBeInTheDocument();
-  expect(
-    await screen.findByText(/2 codex processes are still running/i)
-  ).toBeInTheDocument();
+  expect(await screen.findByText(/2 processes running/i)).toBeInTheDocument();
   expect(await screen.findByText(/blocking pids: 111, 222/i)).toBeInTheDocument();
 });

@@ -5,7 +5,6 @@ import { IconCheck, LiveRegion } from "./components/ui";
 import {
   AccountWorkspaceContent,
   CurrentCodexSessionCard,
-  ProcessStatusPanel,
   RecentActivityPanel,
   summarizeAccounts,
   useActivityFeed,
@@ -31,6 +30,7 @@ function App() {
     refreshUsage,
     refreshCurrentSession,
     refreshSingleUsage,
+    reconnectAccount,
     saveCurrentSessionSnapshot,
     deleteAccount,
     renameAccount,
@@ -117,6 +117,30 @@ function App() {
     }
   }, [pushActivity, saveCurrentSessionSnapshot]);
 
+  const handleReconnect = useCallback(
+    async (accountId: string) => {
+      const account = accounts.find((item) => item.id === accountId);
+
+      try {
+        await reconnectAccount(accountId);
+        setAnnouncement("Account reconnected.");
+        pushActivity(
+          "success",
+          account ? `Reconnected ${account.name} and refreshed credentials.` : "Account reconnected and refreshed.",
+        );
+      } catch (error) {
+        console.error("Failed to reconnect account:", getErrorMessage(error));
+        setAnnouncement("Failed to reconnect account.");
+        pushActivity(
+          "warning",
+          account ? `Reconnect failed for ${account.name}.` : "Reconnect action failed.",
+        );
+        throw error;
+      }
+    },
+    [accounts, pushActivity, reconnectAccount],
+  );
+
   return (
     <div className="app-shell">
       <a
@@ -129,6 +153,7 @@ function App() {
       <WorkbenchHeader
         isRefreshing={isRefreshing}
         summary={summary}
+        processInfo={processInfo}
         themePreference={themePreference}
         onRefreshUsage={() => {
           void handleRefresh();
@@ -138,8 +163,6 @@ function App() {
       />
 
       <main id="main-content" className="mx-auto max-w-7xl space-y-5 px-4 pb-10 sm:px-6">
-        <ProcessStatusPanel processInfo={processInfo} />
-
         <section className="space-y-5">
           <CurrentCodexSessionCard
             summary={currentSession}
@@ -158,6 +181,7 @@ function App() {
               void handleDelete(accountId);
             }}
             onRefreshSingleUsage={refreshSingleUsage}
+            onReconnectAccount={handleReconnect}
             onRename={renameAccount}
             onToggleMask={toggleMaskedAccountId}
           />

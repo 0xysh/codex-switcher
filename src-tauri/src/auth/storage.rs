@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use crate::types::{AccountsStore, AuthData, StoredAccount};
+use crate::types::{AccountsStore, AuthData, AuthMode, StoredAccount};
 
 const LEGACY_KEYCHAIN_PLACEHOLDER: &str = "__stored_in_keychain__";
 
@@ -259,4 +259,37 @@ pub fn update_account_metadata(
 
     save_accounts(&store)?;
     Ok(())
+}
+
+/// Replace OAuth credentials for an existing account without changing its ID/name
+pub fn replace_account_chatgpt_credentials(
+    account_id: &str,
+    id_token: String,
+    access_token: String,
+    refresh_token: String,
+    provider_account_id: Option<String>,
+    email: Option<String>,
+    plan_type: Option<String>,
+) -> Result<StoredAccount> {
+    let mut store = load_accounts()?;
+
+    let account = store
+        .accounts
+        .iter_mut()
+        .find(|a| a.id == account_id)
+        .context("Account not found")?;
+
+    account.auth_mode = AuthMode::ChatGPT;
+    account.auth_data = AuthData::ChatGPT {
+        id_token,
+        access_token,
+        refresh_token,
+        account_id: provider_account_id,
+    };
+    account.email = email;
+    account.plan_type = plan_type;
+
+    let updated = account.clone();
+    save_accounts(&store)?;
+    Ok(updated)
 }

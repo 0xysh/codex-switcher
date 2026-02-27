@@ -10,6 +10,7 @@ interface AccountWorkspaceContentProps {
   onOpenAddAccount: () => void;
   onDelete: (accountId: string) => void;
   onRefreshSingleUsage: (accountId: string) => Promise<void>;
+  onReconnectAccount: (accountId: string) => Promise<void>;
   onRename: (accountId: string, newName: string) => Promise<void>;
   onToggleMask: (accountId: string) => void;
 }
@@ -22,6 +23,7 @@ export function AccountWorkspaceContent({
   onOpenAddAccount,
   onDelete,
   onRefreshSingleUsage,
+  onReconnectAccount,
   onRename,
   onToggleMask,
 }: AccountWorkspaceContentProps) {
@@ -73,6 +75,7 @@ export function AccountWorkspaceContent({
           account={account}
           onDelete={() => onDelete(account.id)}
           onRefresh={() => onRefreshSingleUsage(account.id)}
+          onReconnect={() => onReconnectAccount(account.id)}
           onRename={(newName: string) => onRename(account.id, newName)}
           masked={maskedAccountIdSet.has(account.id)}
           onToggleMask={() => onToggleMask(account.id)}

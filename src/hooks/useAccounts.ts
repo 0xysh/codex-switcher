@@ -188,6 +188,37 @@ export function useAccounts() {
     }
   }, []);
 
+  const reconnectAccount = useCallback(
+    async (accountId: string) => {
+      const account = accounts.find((item) => item.id === accountId);
+      if (!account) {
+        throw new Error("Account not found");
+      }
+
+      if (account.auth_mode !== "chat_gpt") {
+        throw new Error("Reconnect is only available for ChatGPT OAuth accounts");
+      }
+
+      try {
+        await invoke<{ auth_url: string; callback_port: number }>("start_reconnect", { accountId });
+        const refreshedAccount = await invoke<AccountInfo>("complete_reconnect");
+
+        mergeAccountSnapshot(refreshedAccount);
+
+        void loadAccounts(true, false);
+
+        void refreshUsage().catch((err) => {
+          console.error("Failed to refresh usage after reconnect:", getErrorMessage(err));
+        });
+
+        return refreshedAccount;
+      } catch (err) {
+        throw err;
+      }
+    },
+    [accounts, loadAccounts, mergeAccountSnapshot, refreshUsage],
+  );
+
   const refreshCurrentSession = useCallback(async () => {
     const summary = await invoke<CurrentAuthSummary>("get_current_auth_summary");
     setCurrentSession(summary);
@@ -236,6 +267,7 @@ export function useAccounts() {
     startOAuthLogin,
     completeOAuthLogin,
     cancelOAuthLogin,
+    reconnectAccount,
     refreshCurrentSession,
     saveCurrentSessionSnapshot,
   };

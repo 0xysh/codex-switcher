@@ -96,6 +96,7 @@ pub enum AuthMode {
     /// Using an OpenAI API key
     ApiKey,
     /// Using ChatGPT OAuth tokens
+    #[serde(rename = "chat_gpt", alias = "chat_g_p_t")]
     ChatGPT,
 }
 
@@ -298,4 +299,22 @@ pub struct CreditStatusDetails {
     pub unlimited: bool,
     #[serde(default)]
     pub balance: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AuthMode;
+
+    #[test]
+    fn serializes_chatgpt_mode_as_chat_gpt() {
+        let value = serde_json::to_string(&AuthMode::ChatGPT).expect("serialize auth mode");
+        assert_eq!(value, "\"chat_gpt\"");
+    }
+
+    #[test]
+    fn deserializes_legacy_chat_g_p_t_alias() {
+        let parsed: AuthMode =
+            serde_json::from_str("\"chat_g_p_t\"").expect("deserialize auth mode");
+        assert_eq!(parsed, AuthMode::ChatGPT);
+    }
 }

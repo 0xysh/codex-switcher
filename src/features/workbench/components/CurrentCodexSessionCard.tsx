@@ -40,7 +40,7 @@ export function CurrentCodexSessionCard({
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const status = summary?.status ?? "missing";
+  const status = summary?.status ?? "checking";
   const statusLabel = summary ? STATUS_LABELS[summary.status] : "Checking";
 
   const modeLabel = useMemo(() => {
@@ -51,51 +51,36 @@ export function CurrentCodexSessionCard({
     return summary.auth_mode === "chat_gpt" ? "ChatGPT OAuth" : "API Key";
   }, [summary]);
 
+  const snapshotPathLabel = summary?.snapshots_dir_path ?? "~/.codex-switcher/snapshots";
+  const authFilePathLabel = summary?.auth_file_path ?? "~/.codex/auth.json";
+  const summaryLine = summary
+    ? `${modeLabel} · ${summary.email ?? "No email"} · ${summary.plan_type ?? "No plan detected"}`
+    : "Checking auth file metadata.";
+
   const statusToneClass =
     status === "ready"
       ? "chip chip-success"
       : status === "missing" || status === "invalid"
         ? "chip chip-warning"
-        : "chip";
+        : status === "error"
+          ? "chip chip-danger"
+          : "chip";
 
   return (
     <section className="surface-panel p-5" aria-label="Current Codex Session">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="section-title">Current Codex Session</p>
-          <p className="mt-2 text-sm text-secondary">
-            Refresh the current CLI auth file, save a snapshot, or import a snapshot account.
-          </p>
+          <p className="mt-2 text-sm text-secondary">{summaryLine}</p>
         </div>
         <span className={statusToneClass}>Status: {statusLabel}</span>
       </div>
 
-      <dl className="mt-4 grid gap-2 text-sm text-secondary sm:grid-cols-2">
-        <div>
-          <dt className="text-muted">Mode</dt>
-          <dd className="text-[var(--text-primary)]">{modeLabel}</dd>
-        </div>
-        <div>
-          <dt className="text-muted">Email</dt>
-          <dd className="text-[var(--text-primary)]">{summary?.email ?? "Not available"}</dd>
-        </div>
-        <div>
-          <dt className="text-muted">Plan</dt>
-          <dd className="text-[var(--text-primary)]">{summary?.plan_type ?? "Not available"}</dd>
-        </div>
-        <div>
-          <dt className="text-muted">Last Modified</dt>
-          <dd className="text-[var(--text-primary)]">{formatTimestamp(summary?.last_modified_at ?? null)}</dd>
-        </div>
-        <div className="sm:col-span-2">
-          <dt className="text-muted">Source File</dt>
-          <dd className="mono-data mt-1 text-xs text-[var(--text-primary)]">
-            {summary?.auth_file_path ?? "~/.codex/auth.json"}
-          </dd>
-        </div>
-      </dl>
-
-      {summary?.message && <p className="mt-3 text-sm text-secondary">{summary.message}</p>}
+      {summary?.message ? (
+        <p className="mt-3 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-soft)] px-3 py-2 text-sm text-[var(--warning)]">
+          {summary.message}
+        </p>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Button
@@ -135,6 +120,22 @@ export function CurrentCodexSessionCard({
           Import snapshot
         </Button>
       </div>
+
+      <details className="mt-4 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] px-3 py-2">
+        <summary className="cursor-pointer select-none text-sm font-semibold text-[var(--text-primary)]">
+          Session details
+        </summary>
+        <dl className="mt-3 grid gap-2 text-xs text-secondary sm:grid-cols-[auto_1fr]">
+          <dt className="text-muted">Last modified</dt>
+          <dd className="text-[var(--text-primary)]">{formatTimestamp(summary?.last_modified_at ?? null)}</dd>
+
+          <dt className="text-muted">Auth file</dt>
+          <dd className="mono-data break-words text-[var(--text-primary)]">{authFilePathLabel}</dd>
+
+          <dt className="text-muted">Snapshots</dt>
+          <dd className="mono-data break-words text-[var(--text-primary)]">{snapshotPathLabel}</dd>
+        </dl>
+      </details>
 
       <p className="sr-only" role="status" aria-live="polite">
         {feedback}

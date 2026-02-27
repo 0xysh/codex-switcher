@@ -23,6 +23,7 @@ type UseAccountsState = {
   startOAuthLogin: (accountName: string) => Promise<OAuthLoginInfo>;
   completeOAuthLogin: () => Promise<AccountInfo>;
   cancelOAuthLogin: () => Promise<void>;
+  reconnectAccount: (accountId: string) => Promise<AccountInfo>;
   refreshCurrentSession: () => Promise<CurrentAuthSummary>;
   saveCurrentSessionSnapshot: () => Promise<string>;
 };
@@ -72,6 +73,16 @@ export function createUseAccountsMock(
       last_used_at: null,
     })),
     cancelOAuthLogin: vi.fn(asyncNoop),
+    reconnectAccount: vi.fn(async (_accountId: string): Promise<AccountInfo> => ({
+      id: "mock",
+      name: "Mock",
+      email: "mock@example.com",
+      plan_type: "plus",
+      auth_mode: "chat_gpt",
+      is_active: true,
+      created_at: new Date().toISOString(),
+      last_used_at: null,
+    })),
     refreshCurrentSession: vi.fn(async (): Promise<CurrentAuthSummary> => ({
       status: "missing",
       auth_mode: null,

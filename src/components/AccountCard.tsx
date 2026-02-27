@@ -16,12 +16,14 @@ import {
   IconRefresh,
   IconShieldCheck,
   IconTrash,
+  IconArrowRightLeft,
 } from "./ui";
 
 interface AccountCardProps {
   account: AccountWithUsage;
   onDelete: () => void;
   onRefresh: () => Promise<void>;
+  onReconnect?: () => Promise<void>;
   onRename: (newName: string) => Promise<void>;
   masked?: boolean;
   onToggleMask?: () => void;
@@ -78,11 +80,13 @@ export function AccountCard({
   account,
   onDelete,
   onRefresh,
+  onReconnect,
   onRename,
   masked = false,
   onToggleMask,
 }: AccountCardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(
     account.usage && !account.usage.error ? new Date() : null
   );
@@ -110,6 +114,22 @@ export function AccountCard({
       setLastRefresh(new Date());
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleReconnect = async () => {
+    if (!onReconnect) {
+      return;
+    }
+
+    setIsReconnecting(true);
+    try {
+      await onReconnect();
+      setLastRefresh(new Date());
+    } catch {
+      return;
+    } finally {
+      setIsReconnecting(false);
     }
   };
 
@@ -152,6 +172,7 @@ export function AccountCard({
   const usageStatus = getUsageStatus(account);
   const UsageStatusIcon = usageStatus.icon;
   const creditsBalance = account.usage?.credits_balance;
+  const canReconnect = account.auth_mode === "chat_gpt" && !!onReconnect;
 
   return (
     <article
@@ -279,6 +300,21 @@ export function AccountCard({
           <IconRefresh className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
           {isRefreshing ? "Refreshing…" : "Refresh Usage"}
         </Button>
+
+        {canReconnect ? (
+          <Button
+            variant="secondary"
+            size="md"
+            className="flex-1"
+            onClick={() => {
+              void handleReconnect();
+            }}
+            disabled={isReconnecting}
+          >
+            <IconArrowRightLeft className={`h-4 w-4 ${isReconnecting ? "animate-pulse" : ""}`} />
+            {isReconnecting ? "Reconnecting…" : "Reconnect"}
+          </Button>
+        ) : null}
 
         <IconButton aria-label="Remove Account" onClick={onDelete} tone="danger">
           <IconTrash className="h-4 w-4" />

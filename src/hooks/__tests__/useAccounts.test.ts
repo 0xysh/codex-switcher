@@ -68,3 +68,61 @@ it("resolves OAuth completion without waiting for usage refresh", async () => {
   expect(listAccountsCallCount).toBeGreaterThanOrEqual(2);
   expect(refreshCallCount).toBeGreaterThanOrEqual(2);
 });
+
+it("reconnects an OAuth account without requiring re-add flow", async () => {
+  let refreshCallCount = 0;
+  let reconnectCompleted = false;
+  const reconnectedAccount: AccountInfo = {
+    ...OAUTH_ACCOUNT,
+    email: "renewed@example.com",
+  };
+
+  invokeMock.mockImplementation(
+    (async (command: string, args?: { accountId?: string }) => {
+      switch (command) {
+        case "list_accounts":
+          return reconnectCompleted ? [reconnectedAccount] : [OAUTH_ACCOUNT];
+        case "refresh_all_accounts_usage":
+          refreshCallCount += 1;
+          if (refreshCallCount === 1) {
+            return [];
+          }
+          return new Promise<never>(() => {});
+        case "start_reconnect":
+          if (args?.accountId !== OAUTH_ACCOUNT.id) {
+            throw new Error("unexpected account id");
+          }
+          return {
+            auth_url: "https://auth.openai.com/oauth/authorize?state=reconnect",
+            callback_port: 1455,
+          };
+        case "complete_reconnect":
+          reconnectCompleted = true;
+          return reconnectedAccount;
+        default:
+          return null;
+      }
+    }) as unknown as Parameters<typeof invokeMock.mockImplementation>[0],
+  );
+
+  const { result } = renderHook(() => useAccounts());
+
+  await waitFor(() => {
+    expect(result.current.loading).toBe(false);
+  });
+
+  const reconnectPromise = result.current.reconnectAccount(OAUTH_ACCOUNT.id).then(() => "resolved" as const);
+  const timeoutPromise = new Promise<"timeout">((resolve) => {
+    setTimeout(() => resolve("timeout"), 800);
+  });
+
+  let outcome: "resolved" | "timeout" = "timeout";
+  await act(async () => {
+    outcome = await Promise.race([reconnectPromise, timeoutPromise]);
+  });
+
+  expect(outcome).toBe("resolved");
+  expect(invokeMock).toHaveBeenCalledWith("start_reconnect", { accountId: OAUTH_ACCOUNT.id });
+  expect(invokeMock).toHaveBeenCalledWith("complete_reconnect");
+  expect(result.current.accounts.find((account) => account.id === OAUTH_ACCOUNT.id)?.email).toBe("renewed@example.com");
+});
