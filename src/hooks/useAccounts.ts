@@ -11,9 +11,28 @@ export function useAccounts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadAccounts = useCallback(async (preserveUsage = false) => {
+  const mergeAccountSnapshot = useCallback((account: AccountInfo) => {
+    setAccounts((prev) => {
+      const existing = prev.find((item) => item.id === account.id);
+      const mergedActiveAccount: AccountWithUsage = {
+        ...account,
+        usage: existing?.usage,
+        usageLoading: existing?.usageLoading,
+      };
+
+      const remainingAccounts = prev
+        .filter((item) => item.id !== account.id)
+        .map((item) => ({ ...item, is_active: false }));
+
+      return [mergedActiveAccount, ...remainingAccounts];
+    });
+  }, []);
+
+  const loadAccounts = useCallback(async (preserveUsage = false, showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       setError(null);
       const accountList = await invoke<AccountInfo[]>("list_accounts");
       
@@ -32,7 +51,9 @@ export function useAccounts() {
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -139,13 +160,19 @@ export function useAccounts() {
   const completeOAuthLogin = useCallback(async () => {
     try {
       const account = await invoke<AccountInfo>("complete_login");
-      await loadAccounts();
-      await refreshUsage();
+      mergeAccountSnapshot(account);
+
+      void loadAccounts(true, false);
+
+      void refreshUsage().catch((err) => {
+        console.error("Failed to refresh usage after OAuth login:", getErrorMessage(err));
+      });
+
       return account;
     } catch (err) {
       throw err;
     }
-  }, [loadAccounts, refreshUsage]);
+  }, [loadAccounts, mergeAccountSnapshot, refreshUsage]);
 
   const cancelOAuthLogin = useCallback(async () => {
     try {
