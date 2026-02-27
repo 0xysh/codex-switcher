@@ -7,6 +7,7 @@ This index is the authoritative entry point for project documentation.
 1. `docs/engineering-standards.md` - architecture, scalability, testing, and documentation governance rules.
 2. `docs/ui-ux-architecture.md` - UI boundaries, accessibility contract, and UI quality checklist.
 3. `AGENTS.md` - repository-wide operational guide for coding agents.
+4. `README.md` - user-facing workflows, including current session refresh/snapshot/import flow.
 
 ## Planning Docs
 

@@ -16,6 +16,14 @@ This document defines frontend ownership boundaries and quality checks for Codex
 
 Do not move command/business logic into presentational components.
 
+## Usage-First Workbench Contract
+
+- Workbench layout is usage-first: header, current session card, account workspace, and recent activity/process status.
+- `CurrentCodexSessionCard` is the only UI entry point for auth.json session refresh/snapshot actions.
+- Account cards are uniform; no active-account special layout and no switch CTA surface.
+- Inspector/shortcuts/search/quick-switch surfaces are intentionally removed from the primary UI.
+- Import flows default to the snapshots directory when available via `useAccounts` session state.
+
 ## Scalability Rules
 
 - Extract reusable behavior into hooks/selectors before duplicating logic.
@@ -35,6 +43,7 @@ All new/changed UI must satisfy:
 - `focus-visible` ring is present on interactive controls.
 - Motion respects `prefers-reduced-motion`.
 - Copy uses typographic ellipsis (`…`) in loading states.
+- Primary session card actions must remain keyboard-accessible and touch-friendly (`>=44px` targets).
 
 ## Testing Strategy
 

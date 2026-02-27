@@ -11,6 +11,7 @@ Scope: whole repository unless a deeper AGENTS.md is added later.
 - Frontend talks to backend through Tauri `invoke` commands.
 - Backend stores account metadata in `~/.codex-switcher/accounts.json`.
 - Credentials are stored locally in `~/.codex-switcher/accounts.json`.
+- Session snapshots are stored in `~/.codex-switcher/snapshots/`.
 
 ## Repository Map
 
@@ -162,6 +163,7 @@ Backend API contract rules:
 
 - Never store credentials in repository files.
 - Store runtime credentials only in local user config (`~/.codex-switcher/accounts.json`).
+- Treat `~/.codex-switcher/snapshots/*.json` as sensitive credential files with restrictive permissions.
 - Preserve restrictive file permissions logic for local credential files.
 - Never log tokens, API keys, refresh tokens, or full auth JSON contents.
 - Keep restrictive CSP in `src-tauri/tauri.conf.json`; do not loosen without justification.

@@ -6,16 +6,29 @@
 
 <p align="center">
   A Desktop Application for Managing Multiple OpenAI <a href="https://github.com/openai/codex">Codex CLI</a> Accounts<br>
-  Easily switch between accounts, monitor usage limits, and stay in control of your quota
+  Monitor usage, manage local account imports, and keep reliable Codex session snapshots
 </p>
 
 ## Features
 
 - **Multi-Account Management** – Add and manage multiple Codex accounts in one place
-- **Quick Switching** – Switch between accounts with a single click
 - **Usage Monitoring** – View real-time usage for both 5-hour and weekly limits
 - **Dual Login Mode** – OAuth authentication or import existing `auth.json` files
+- **Current Session Card** – Refresh current `~/.codex/auth.json` metadata and save snapshots
+- **Snapshot Import Flow** – Import from `~/.codex-switcher/snapshots/` with picker default path
 - **Local Credential Storage** – Account credentials are stored in `~/.codex-switcher/accounts.json` with restrictive file permissions
+
+## Session Snapshot Workflow
+
+1. Open **Current Codex Session** in the main dashboard.
+2. Click **Refresh session** to re-read `~/.codex/auth.json` metadata.
+3. Click **Save snapshot** to write a timestamped file in `~/.codex-switcher/snapshots/`.
+4. Click **Import snapshot** to open Add Account modal with the picker defaulted to the snapshots folder.
+
+Notes:
+
+- Snapshot and auth files contain sensitive credentials.
+- The UI only shows metadata (status, mode, email, plan, file paths, timestamp), never tokens.
 
 ## Installation
 
@@ -79,6 +92,7 @@ pnpm run check:ui
 
 - Credentials are stored locally in `~/.codex-switcher/accounts.json`.
 - The app applies restrictive file permissions (`0600`) on Unix-like systems for this file.
+- Session snapshots are stored locally in `~/.codex-switcher/snapshots/` with restrictive permissions (`0700` directory, `0600` files on Unix).
 - Legacy placeholder records from previous keychain-backed builds are automatically removed on load.
 
 ## Disclaimer
