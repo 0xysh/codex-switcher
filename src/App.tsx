@@ -63,6 +63,8 @@ function App() {
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const closeAddAccountModal = useCallback(() => setIsAddModalOpen(false), []);
+  const openAddAccountModal = useCallback(() => setIsAddModalOpen(true), []);
 
   useWorkbenchHotkeys({
     isQuickSwitchOpen,
@@ -212,7 +214,7 @@ function App() {
         onRefreshUsage={() => {
           void handleRefresh();
         }}
-        onOpenAddAccount={() => setIsAddModalOpen(true)}
+        onOpenAddAccount={openAddAccountModal}
         onThemeChange={setThemePreference}
       />
 
@@ -241,7 +243,7 @@ function App() {
             loading={loading}
             error={error}
             hasRunningProcesses={hasRunningProcesses}
-            onOpenAddAccount={() => setIsAddModalOpen(true)}
+            onOpenAddAccount={openAddAccountModal}
             onSelectAccount={setSelectedAccountId}
             onSwitch={(accountId) => {
               void handleSwitch(accountId);
@@ -275,7 +277,7 @@ function App() {
 
       <AddAccountModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={closeAddAccountModal}
         existingAccountNames={accounts.map((account) => account.name)}
         onImportFile={importFromFile}
         onStartOAuth={startOAuthLogin}

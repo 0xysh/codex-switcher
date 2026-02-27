@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 
 interface UseDialogFocusTrapOptions {
@@ -12,8 +12,11 @@ export function useDialogFocusTrap({
   containerRef,
   onRequestClose,
 }: UseDialogFocusTrapOptions) {
+  const hasAutoFocusedRef = useRef(false);
+
   useEffect(() => {
     if (!isOpen) {
+      hasAutoFocusedRef.current = false;
       return;
     }
 
@@ -34,8 +37,11 @@ export function useDialogFocusTrap({
       );
     };
 
-    const focusableElements = getFocusableElements();
-    focusableElements[0]?.focus();
+    if (!hasAutoFocusedRef.current) {
+      const focusableElements = getFocusableElements();
+      focusableElements[0]?.focus();
+      hasAutoFocusedRef.current = true;
+    }
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {

@@ -125,3 +125,26 @@ it("rejects untrusted oauth URLs before browser launch", async () => {
   expect(onCompleteOAuth).not.toHaveBeenCalled();
   expect(await screen.findByText(/invalid oauth url from backend/i)).toBeInTheDocument();
 });
+
+it("keeps account name input focus during parent rerenders", async () => {
+  const user = userEvent.setup();
+
+  const modalProps = {
+    isOpen: true,
+    onImportFile: vi.fn(async () => {}),
+    onStartOAuth: vi.fn(async () => ({ auth_url: "https://auth.openai.com/oauth/authorize?state=test" })),
+    onCompleteOAuth: vi.fn(async () => ({})),
+    onCancelOAuth: vi.fn(async () => {}),
+  };
+
+  const { rerender } = render(<AddAccountModal {...modalProps} onClose={vi.fn()} />);
+
+  const input = screen.getByLabelText(/account name/i);
+  await user.click(input);
+  await user.type(input, "Work Account");
+  expect(input).toHaveFocus();
+
+  rerender(<AddAccountModal {...modalProps} onClose={vi.fn()} />);
+
+  expect(input).toHaveFocus();
+});
