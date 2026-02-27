@@ -11,7 +11,7 @@ export function ImportCredentialsPanel({ filePath, onSelectFile }: ImportCredent
       id="add-account-panel-import"
       role="tabpanel"
       aria-labelledby="add-account-tab-import"
-      className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-4 shadow-[var(--shadow-soft)]"
+      className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-4 shadow-[var(--shadow-soft)]"
     >
       <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Import credentials</h3>
       <div className="flex flex-col gap-3 sm:flex-row">

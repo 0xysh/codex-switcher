@@ -18,11 +18,12 @@ Do not move command/business logic into presentational components.
 
 ## Usage-First Workbench Contract
 
-- Workbench layout is usage-first: header, current session card, account workspace, and recent activity/process status.
+- Workbench layout is usage-first: header, account workspace, current session card, and recent activity.
 - `CurrentCodexSessionCard` is the only UI entry point for auth.json session refresh/snapshot actions.
 - Account cards are uniform; no active-account special layout and no switch CTA surface.
 - Inspector/shortcuts/search/quick-switch surfaces are intentionally removed from the primary UI.
-- Import flows default to the snapshots directory when available via `useAccounts` session state.
+- Generic Add Account import defaults to the Codex auth directory (`~/.codex`) when current session metadata is available.
+- Current Session `Import Snapshot` refreshes session metadata first, then defaults file picker to snapshots directory.
 
 ## Scalability Rules
 

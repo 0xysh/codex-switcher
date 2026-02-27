@@ -206,36 +206,40 @@ function App() {
         onThemeChange={setThemePreference}
       />
 
-      <main id="main-content" className="mx-auto max-w-7xl space-y-5 px-4 pb-10 sm:px-6">
-        <section className="space-y-5">
-          <AccountWorkspaceContent
-            accounts={accounts}
-            loading={loading}
-            error={error}
-            onOpenAddAccount={openAddAccountModal}
-            onDelete={(accountId) => {
-              void handleDelete(accountId);
-            }}
-            onRefreshSingleUsage={refreshSingleUsage}
-            onReconnectAccount={handleReconnect}
-            onRename={renameAccount}
-          />
+      <main id="main-content" className="mx-auto max-w-[90rem] px-4 pb-12 sm:px-6">
+        <div className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <section className="reveal-rise stagger-1 space-y-5">
+            <AccountWorkspaceContent
+              accounts={accounts}
+              loading={loading}
+              error={error}
+              onOpenAddAccount={openAddAccountModal}
+              onDelete={(accountId) => {
+                void handleDelete(accountId);
+              }}
+              onRefreshSingleUsage={refreshSingleUsage}
+              onReconnectAccount={handleReconnect}
+              onRename={renameAccount}
+            />
 
-          <CurrentCodexSessionCard
-            summary={currentSession}
-            onRefresh={refreshCurrentSession}
-            onSaveSnapshot={handleSaveSnapshot}
-            onImportSnapshot={() => {
-              void openImportSnapshotModal();
-            }}
-          />
-        </section>
+            <CurrentCodexSessionCard
+              summary={currentSession}
+              onRefresh={refreshCurrentSession}
+              onSaveSnapshot={handleSaveSnapshot}
+              onImportSnapshot={() => {
+                void openImportSnapshotModal();
+              }}
+            />
+          </section>
 
-        <RecentActivityPanel activity={activity} />
+          <div className="reveal-rise stagger-2 2xl:sticky 2xl:top-5 2xl:self-start">
+            <RecentActivityPanel activity={activity} />
+          </div>
+        </div>
       </main>
 
       {refreshSuccess && (
-        <div className="toast-pop fixed bottom-6 right-6 rounded-xl border border-[var(--success-border)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)] shadow-[var(--shadow-soft)]">
+        <div className="toast-pop fixed bottom-6 right-6 z-40 rounded-2xl border border-[var(--success-border)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)] shadow-[var(--shadow-raised)] backdrop-blur">
           <span className="inline-flex items-center gap-2">
             <IconCheck className="h-4 w-4" />
             Usage refreshed successfully
@@ -244,7 +248,7 @@ function App() {
       )}
 
       {deleteConfirmId && (
-        <div className="toast-pop fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)] shadow-[var(--shadow-soft)]">
+        <div className="toast-pop fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-2xl border border-[var(--warning-border)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)] shadow-[var(--shadow-raised)] backdrop-blur">
           Press delete again to confirm account removal.
         </div>
       )}

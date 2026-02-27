@@ -1,37 +1,53 @@
-@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&family=Syne:wght@500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap");
 @import "tailwindcss";
 @import "./styles/tokens.css";
 
 body {
-  font-family: "Manrope", "Segoe UI", sans-serif;
-  line-height: 1.5;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  line-height: 1.55;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1,
 h2,
 h3,
 h4 {
-  font-family: "Syne", "Manrope", sans-serif;
-  letter-spacing: -0.015em;
+  font-family: "Fraunces", "Times New Roman", serif;
+  font-variation-settings: "SOFT" 40;
+  letter-spacing: -0.01em;
   text-wrap: balance;
+}
+
+h1 {
+  line-height: 1.08;
+}
+
+h2,
+h3,
+h4 {
+  line-height: 1.15;
 }
 
 ::selection {
   background: var(--accent-soft);
-  color: var(--text-primary);
+  color: #09111f;
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
 }
 
 ::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+  border: 2px solid transparent;
+  background:
+    linear-gradient(180deg, var(--accent-primary), var(--accent-secondary)) padding-box,
+    linear-gradient(180deg, rgb(255 255 255 / 0.7), rgb(255 255 255 / 0.15)) border-box;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgb(255 255 255 / 0.24);
 }

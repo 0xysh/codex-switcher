@@ -67,7 +67,7 @@ export function CurrentCodexSessionCard({
           : "chip";
 
   return (
-    <section className="surface-panel border-[var(--border-strong)] p-5 sm:p-6" aria-label="Current Codex Session">
+    <section className="surface-panel reveal-rise stagger-2 border-[var(--border-strong)] p-5 sm:p-6" aria-label="Current Codex Session">
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] xl:items-start">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -80,7 +80,7 @@ export function CurrentCodexSessionCard({
           <p className="mt-2 text-sm text-secondary text-pretty">{summaryLine}</p>
 
           {summary?.message ? (
-            <p className="mt-3 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-soft)] px-3 py-2 text-sm text-[var(--warning)]">
+            <p className="mt-3 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-soft)] px-3 py-2 text-sm text-[var(--warning)] shadow-[var(--shadow-soft)]">
               {summary.message}
             </p>
           ) : null}
@@ -150,7 +150,7 @@ export function CurrentCodexSessionCard({
         </div>
       </div>
 
-      <details className="mt-4 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] px-3 py-2 shadow-[var(--shadow-soft)]">
+      <details className="mt-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] px-3.5 py-2.5 shadow-[var(--shadow-soft)]">
         <summary className="cursor-pointer select-none text-sm font-semibold text-[var(--text-primary)]">
           Session details
         </summary>

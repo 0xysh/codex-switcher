@@ -29,6 +29,7 @@ Notes:
 
 - Snapshot and auth files contain sensitive credentials.
 - The UI only shows metadata (status, mode, email, plan, file paths, timestamp), never tokens.
+- Generic Add Account import defaults to `~/.codex` when current session metadata is available.
 
 ## Installation
 

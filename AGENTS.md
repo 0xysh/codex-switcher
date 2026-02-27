@@ -7,11 +7,12 @@ Scope: whole repository unless a deeper AGENTS.md is added later.
 ## Project Overview
 
 - Stack: Tauri v2 + Rust backend + React 19 + TypeScript + Vite + Tailwind CSS v4.
-- Purpose: manage multiple Codex accounts and switch the active `~/.codex/auth.json`.
+- Purpose: inspect Codex account usage, manage account imports/reconnects, and maintain active `~/.codex/auth.json` context.
 - Frontend talks to backend through Tauri `invoke` commands.
 - Backend stores account metadata in `~/.codex-switcher/accounts.json`.
 - Credentials are stored locally in `~/.codex-switcher/accounts.json`.
 - Session snapshots are stored in `~/.codex-switcher/snapshots/`.
+- Import defaults: generic Add Account import opens in `~/.codex` (when current session metadata is available), while Current Session `Import Snapshot` opens in `~/.codex-switcher/snapshots/`.
 
 ## Repository Map
 

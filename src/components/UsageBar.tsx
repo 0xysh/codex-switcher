@@ -48,17 +48,19 @@ function UsageMetric({
     variant === "five_hour"
       ? {
           label: "text-[var(--usage-5h)]",
-          iconBadge: "border-[var(--usage-5h)] bg-[var(--usage-5h-soft)]",
-          healthyBar: "bg-[var(--usage-5h)]",
-          warningBar: "bg-[#f59e0b]",
+          iconBadge: "border-[var(--usage-5h)] bg-[var(--usage-5h-soft)] shadow-[0_8px_16px_rgb(36_89_212_/_.14)]",
+          healthyBar: "bg-gradient-to-r from-[var(--usage-5h)] to-[#4f80ea]",
+          warningBar: "bg-gradient-to-r from-[#f59e0b] to-[#f4b153]",
           healthyText: "text-[var(--usage-5h)]",
+          windowTone: "Burst window",
         }
       : {
           label: "text-[var(--usage-7d)]",
-          iconBadge: "border-[var(--usage-7d)] bg-[var(--usage-7d-soft)]",
-          healthyBar: "bg-[var(--usage-7d)]",
-          warningBar: "bg-[#fb923c]",
+          iconBadge: "border-[var(--usage-7d)] bg-[var(--usage-7d-soft)] shadow-[0_8px_16px_rgb(21_152_115_/_.14)]",
+          healthyBar: "bg-gradient-to-r from-[var(--usage-7d)] to-[#2ac598]",
+          warningBar: "bg-gradient-to-r from-[#fb923c] to-[#fbb36f]",
           healthyText: "text-[var(--usage-7d)]",
+          windowTone: "Rolling window",
         };
 
   const tone =
@@ -83,13 +85,16 @@ function UsageMetric({
   const ToneIcon = tone.icon;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       <div className="flex items-center justify-between text-xs">
-        <span className={`flex items-center gap-1 font-semibold ${metricStyle.label}`}>
-          <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full border ${metricStyle.iconBadge}`}>
+        <span className={`flex items-center gap-1.5 font-semibold ${metricStyle.label}`}>
+          <span className={`inline-flex h-[1.375rem] w-[1.375rem] items-center justify-center rounded-full border ${metricStyle.iconBadge}`}>
             <IconActivity className="h-3 w-3" />
           </span>
-          {label}
+          <span>{label}</span>
+          <span className="mono-data rounded-full border border-[var(--border-soft)] bg-[var(--bg-surface)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
+            {metricStyle.windowTone}
+          </span>
           {windowLabel && <span className="text-muted">({windowLabel})</span>}
         </span>
         <span className={`mono-data tabular-nums inline-flex items-center gap-1 ${tone.text}`}>
@@ -98,7 +103,7 @@ function UsageMetric({
         </span>
       </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-surface)]">
+      <div className="h-2.5 overflow-hidden rounded-full border border-[var(--border-soft)] bg-[var(--bg-surface)]">
         <div
           className={`h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none ${tone.bar}`}
           style={{ width: `${Math.min(remainingPercent, 100)}%` }}
@@ -119,8 +124,8 @@ export function UsageBar({ usage, loading = false }: UsageBarProps) {
   if (loading) {
     return (
       <div className="space-y-2" aria-label="Loading usage">
-        <div className="h-2 animate-pulse rounded-full bg-[var(--bg-surface)] motion-reduce:animate-none" />
-        <div className="h-2 w-4/5 animate-pulse rounded-full bg-[var(--bg-surface)] motion-reduce:animate-none" />
+        <div className="h-2.5 animate-pulse rounded-full bg-[var(--bg-surface)] motion-reduce:animate-none" />
+        <div className="h-2.5 w-4/5 animate-pulse rounded-full bg-[var(--bg-surface)] motion-reduce:animate-none" />
       </div>
     );
   }

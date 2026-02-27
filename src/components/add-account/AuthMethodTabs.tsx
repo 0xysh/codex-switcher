@@ -12,7 +12,7 @@ export function AuthMethodTabs({ activeTab, onTabChange }: AuthMethodTabsProps) 
     <div
       role="tablist"
       aria-label="Add account method"
-      className="mt-4 grid grid-cols-2 gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] p-1 shadow-[var(--shadow-soft)]"
+      className="mt-4 grid grid-cols-2 gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] p-1.5 shadow-[var(--shadow-soft)]"
       onKeyDown={(event) => {
         if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
           return;
@@ -29,9 +29,9 @@ export function AuthMethodTabs({ activeTab, onTabChange }: AuthMethodTabsProps) 
         aria-selected={activeTab === "oauth"}
         aria-controls="add-account-panel-oauth"
         tabIndex={activeTab === "oauth" ? 0 : -1}
-        className={`cursor-pointer rounded-lg border px-3 py-2 text-sm font-semibold transition-[background-color,color,border-color,box-shadow] ${
+        className={`cursor-pointer rounded-xl border px-3 py-2 text-sm font-semibold transition-[background-color,color,border-color,box-shadow] ${
           activeTab === "oauth"
-            ? "border-transparent bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-[0_8px_18px_rgb(37_99_235_/_.22)]"
+            ? "border-[var(--accent-border)] bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-[0_10px_20px_rgb(20_80_182_/_.3)]"
             : "border-transparent text-secondary hover:border-[var(--border-soft)] hover:bg-[var(--bg-surface-elevated)]"
         }`}
         onClick={() => onTabChange("oauth")}
@@ -49,9 +49,9 @@ export function AuthMethodTabs({ activeTab, onTabChange }: AuthMethodTabsProps) 
         aria-selected={activeTab === "import"}
         aria-controls="add-account-panel-import"
         tabIndex={activeTab === "import" ? 0 : -1}
-        className={`cursor-pointer rounded-lg border px-3 py-2 text-sm font-semibold transition-[background-color,color,border-color,box-shadow] ${
+        className={`cursor-pointer rounded-xl border px-3 py-2 text-sm font-semibold transition-[background-color,color,border-color,box-shadow] ${
           activeTab === "import"
-            ? "border-transparent bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-[0_8px_18px_rgb(37_99_235_/_.22)]"
+            ? "border-[var(--accent-border)] bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-[0_10px_20px_rgb(20_80_182_/_.3)]"
             : "border-transparent text-secondary hover:border-[var(--border-soft)] hover:bg-[var(--bg-surface-elevated)]"
         }`}
         onClick={() => onTabChange("import")}

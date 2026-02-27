@@ -18,7 +18,7 @@ export function AccountNameField({ name, onChange }: AccountNameFieldProps) {
         spellCheck={false}
         onChange={(event) => onChange(event.target.value)}
         placeholder="e.g. Production Team…"
-        className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-4 py-3 text-sm text-[var(--text-primary)] transition-[border-color,box-shadow] focus-visible:border-[var(--accent-border)]"
+        className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-4 py-3 text-sm text-[var(--text-primary)] shadow-[var(--shadow-soft)] transition-[border-color,box-shadow] focus-visible:border-[var(--accent-border)]"
       />
       <p className="mt-2 text-xs text-muted">This label is local to this app and can be changed later.</p>
     </div>
