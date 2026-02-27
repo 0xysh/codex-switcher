@@ -66,10 +66,7 @@ function getUsageStatus(account: AccountWithUsage) {
     };
   }
 
-  if (
-    typeof account.usage?.primary_used_percent === "number" &&
-    account.usage.primary_used_percent >= 80
-  ) {
+  if (typeof account.usage?.primary_used_percent === "number" && account.usage.primary_used_percent >= 80) {
     return {
       label: "Near limit",
       className: "chip chip-warning",
@@ -101,6 +98,7 @@ export function AccountCard({
   const [lastRefresh, setLastRefresh] = useState<Date | null>(
     account.usage && !account.usage.error ? new Date() : null
   );
+  const [isRenaming, setIsRenaming] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(account.name);
 
@@ -130,17 +128,19 @@ export function AccountCard({
   const commitRename = async () => {
     const trimmed = editName.trim();
 
-    if (!trimmed || trimmed === account.name) {
+    if (!trimmed || trimmed === account.name || isRenaming) {
       setEditName(account.name);
       setIsEditing(false);
       return;
     }
 
     try {
+      setIsRenaming(true);
       await onRename(trimmed);
     } catch {
       setEditName(account.name);
     } finally {
+      setIsRenaming(false);
       setIsEditing(false);
     }
   };
@@ -158,9 +158,7 @@ export function AccountCard({
 
   const planDisplay = account.plan_type
     ? account.plan_type.charAt(0).toUpperCase() + account.plan_type.slice(1)
-    : account.auth_mode === "api_key"
-      ? "API Key"
-      : "Unknown";
+    : account.auth_mode === "api_key" ? "API Key" : "Unknown";
 
   const authModeDisplay = account.auth_mode === "api_key" ? "Imported" : "OAuth";
   const usageStatus = getUsageStatus(account);
@@ -174,7 +172,9 @@ export function AccountCard({
           : "hover:-translate-y-[1px] hover:border-[var(--border-strong)]"
       } ${account.is_active ? "border-[var(--accent-primary)]" : ""}`}
     >
-      <header className="mb-4 flex items-start justify-between gap-4">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-border)] to-transparent" />
+
+      <header className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex items-center gap-2">
             {account.is_active ? (
@@ -199,6 +199,9 @@ export function AccountCard({
               ref={inputRef}
               type="text"
               name="accountRename"
+              aria-label="Account name"
+              autoComplete="off"
+              disabled={isRenaming}
               value={editName}
               onChange={(event) => setEditName(event.target.value)}
               onBlur={() => {
@@ -212,20 +215,20 @@ export function AccountCard({
               type="button"
               aria-label="Rename Account"
               onClick={() => !masked && setIsEditing(true)}
-              disabled={masked}
+              disabled={masked || isRenaming}
               className="w-full cursor-pointer truncate text-left text-lg font-semibold text-[var(--text-primary)] transition-colors hover:text-[var(--accent-secondary)] disabled:cursor-default disabled:hover:text-[var(--text-primary)]"
             >
               <BlurredText blur={masked}>{account.name}</BlurredText>
             </button>
           )}
 
-          <div className="mt-1 flex items-center gap-2 text-sm text-secondary">
+          <div className="mt-1 flex min-w-0 items-center gap-2 text-sm text-secondary">
             {account.auth_mode === "api_key" ? (
               <IconKey className="h-4 w-4" />
             ) : (
               <IconShieldCheck className="h-4 w-4" />
             )}
-            {account.email ? <BlurredText blur={masked}>{account.email}</BlurredText> : "No email available"}
+            {account.email ? <span className="truncate"><BlurredText blur={masked}>{account.email}</BlurredText></span> : <span className="text-muted">No email available</span>}
           </div>
         </div>
 
@@ -247,7 +250,7 @@ export function AccountCard({
         </div>
       </header>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-wrap gap-2 border-y border-[var(--border-soft)] py-3">
         <span className="chip">
           <IconActivity className="h-3.5 w-3.5" />
           {planDisplay}
@@ -262,9 +265,9 @@ export function AccountCard({
         <UsageBar usage={account.usage} loading={isRefreshing || account.usageLoading} />
       </div>
 
-      <div className="mb-4 flex items-center gap-2 text-xs text-muted">
-        <IconClock className="h-3.5 w-3.5" />
-        Last updated {formatLastRefresh(lastRefresh)}
+      <div className="mb-4 flex items-center justify-between gap-2 text-xs text-muted">
+        <span className="inline-flex items-center gap-2"><IconClock className="h-3.5 w-3.5" />Last updated</span>
+        <span className="mono-data">{formatLastRefresh(lastRefresh)}</span>
       </div>
 
       {switchDisabled && !account.is_active && (
