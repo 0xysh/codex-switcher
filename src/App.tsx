@@ -7,6 +7,10 @@ import { LiveRegion } from "./components/ui/LiveRegion";
 import type { CodexProcessInfo } from "./types";
 import "./App.css";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function App() {
   const {
     accounts,
@@ -37,7 +41,7 @@ function App() {
       const info = await invoke<CodexProcessInfo>("check_codex_processes");
       setProcessInfo(info);
     } catch (err) {
-      console.error("Failed to check processes:", err);
+      console.error("Failed to check processes:", getErrorMessage(err));
     }
   }, []);
 
@@ -59,7 +63,7 @@ function App() {
       setSwitchingId(accountId);
       await switchAccount(accountId);
     } catch (err) {
-      console.error("Failed to switch account:", err);
+      console.error("Failed to switch account:", getErrorMessage(err));
     } finally {
       setSwitchingId(null);
     }
@@ -81,7 +85,7 @@ function App() {
       setDeleteConfirmId(null);
       setAnnouncement("Account removed");
     } catch (err) {
-      console.error("Failed to delete account:", err);
+      console.error("Failed to delete account:", getErrorMessage(err));
     }
   };
 
@@ -94,7 +98,7 @@ function App() {
       setAnnouncement("Usage refreshed successfully");
       setTimeout(() => setRefreshSuccess(false), 2000);
     } catch (err) {
-      console.error("Failed to refresh usage:", err);
+      console.error("Failed to refresh usage:", getErrorMessage(err));
       setAnnouncement("Failed to refresh usage");
     } finally {
       setIsRefreshing(false);

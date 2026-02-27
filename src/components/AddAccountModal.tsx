@@ -2,6 +2,10 @@ import { useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 interface AddAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -88,7 +92,7 @@ export function AddAccountModal({
         setFilePath(selected);
       }
     } catch (err) {
-      console.error("Failed to open file dialog:", err);
+      console.error("Failed to open file dialog:", getErrorMessage(err));
     }
   };
 
@@ -145,7 +149,7 @@ export function AddAccountModal({
               onClick={() => {
                 if (tab === "import" && oauthPending) {
                   void onCancelOAuth().catch((err) => {
-                    console.error("Failed to cancel login:", err);
+                    console.error("Failed to cancel login:", getErrorMessage(err));
                   });
                   setOauthPending(false);
                   setLoading(false);
