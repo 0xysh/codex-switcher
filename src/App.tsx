@@ -5,7 +5,8 @@ import { IconCheck, LiveRegion } from "./components/ui";
 import {
   AccountWorkspaceContent,
   CurrentCodexSessionCard,
-  InspectorSidebar,
+  ProcessStatusPanel,
+  RecentActivityPanel,
   summarizeAccounts,
   useActivityFeed,
   useProcessMonitor,
@@ -136,7 +137,9 @@ function App() {
         onThemeChange={setThemePreference}
       />
 
-      <main id="main-content" className="mx-auto grid max-w-7xl gap-5 px-4 pb-10 sm:px-6 lg:grid-cols-[1.3fr_0.9fr]">
+      <main id="main-content" className="mx-auto max-w-7xl space-y-5 px-4 pb-10 sm:px-6">
+        <ProcessStatusPanel processInfo={processInfo} />
+
         <section className="space-y-5">
           <CurrentCodexSessionCard
             summary={currentSession}
@@ -160,7 +163,7 @@ function App() {
           />
         </section>
 
-        <InspectorSidebar processInfo={processInfo} activity={activity} />
+        <RecentActivityPanel activity={activity} />
       </main>
 
       {refreshSuccess && (
