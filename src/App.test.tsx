@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import App from "./App";
+import type { CurrentAuthSummary } from "./types";
 import { createUseAccountsMock } from "./test/mocks/useAccounts";
 import { invokeMock } from "./test/mocks/tauri";
 
@@ -78,6 +79,35 @@ it("clears refresh loading state when refresh fails", async () => {
   expect(
     await screen.findByRole("status", { name: /global announcements/i })
   ).toHaveTextContent("Failed to refresh usage");
+});
+
+it("refreshes current session before opening snapshot import modal", async () => {
+  const refreshedSummary: CurrentAuthSummary = {
+    status: "ready",
+    auth_mode: "chat_gpt",
+    email: "session@example.com",
+    plan_type: "plus",
+    auth_file_path: "/Users/test/.codex/auth.json",
+    snapshots_dir_path: "/Users/test/.codex-switcher/snapshots",
+    last_modified_at: null,
+    message: null,
+  };
+
+  const refreshCurrentSession = vi.fn(async () => refreshedSummary);
+
+  useAccountsMock.mockReturnValue(
+    createUseAccountsMock({
+      refreshCurrentSession,
+    })
+  );
+
+  const user = userEvent.setup();
+  render(<App />);
+
+  await user.click(await screen.findByRole("button", { name: /import snapshot/i }));
+
+  expect(refreshCurrentSession).toHaveBeenCalled();
+  expect(await screen.findByRole("dialog", { name: /add a new account/i })).toBeInTheDocument();
 });
 
 it("clears delete confirmation message after timeout", async () => {

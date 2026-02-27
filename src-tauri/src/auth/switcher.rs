@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 
-use crate::auth::storage::{ensure_snapshots_dir, get_snapshots_dir};
+use crate::auth::storage::ensure_snapshots_dir;
 use crate::types::{
     AuthData, AuthDotJson, AuthMode, CurrentAuthStatus, CurrentAuthSummary, StoredAccount,
     TokenData,
@@ -268,7 +268,7 @@ pub(crate) fn derive_summary_from_auth(
 
 pub fn build_current_auth_summary() -> Result<CurrentAuthSummary> {
     let auth_path = get_codex_auth_file()?;
-    let snapshots_dir = get_snapshots_dir()?;
+    let snapshots_dir = ensure_snapshots_dir()?;
     let auth_file_path = auth_path.display().to_string();
     let snapshots_dir_path = snapshots_dir.display().to_string();
 

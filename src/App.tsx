@@ -19,6 +19,19 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function getParentDirectory(path: string | null | undefined): string | null {
+  if (!path) {
+    return null;
+  }
+
+  const match = path.match(/^(.*)[/\\][^/\\]+$/);
+  if (!match || match.length < 2) {
+    return null;
+  }
+
+  return match[1] || null;
+}
+
 function App() {
   const {
     accounts,
@@ -44,13 +57,46 @@ function App() {
   const { activity, pushActivity } = useActivityFeed();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [filePickerDefaultPath, setFilePickerDefaultPath] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
   const [announcement, setAnnouncement] = useState<string | null>(null);
 
-  const closeAddAccountModal = useCallback(() => setIsAddModalOpen(false), []);
-  const openAddAccountModal = useCallback(() => setIsAddModalOpen(true), []);
+  const authDirectoryPath = useMemo(
+    () => getParentDirectory(currentSession?.auth_file_path),
+    [currentSession?.auth_file_path],
+  );
+
+  const snapshotDirectoryPath = useMemo(
+    () => currentSession?.snapshots_dir_path ?? snapshotsDirPath,
+    [currentSession?.snapshots_dir_path, snapshotsDirPath],
+  );
+
+  const closeAddAccountModal = useCallback(() => {
+    setIsAddModalOpen(false);
+    setFilePickerDefaultPath(null);
+  }, []);
+
+  const openAddAccountModal = useCallback((preferredPath?: string | null) => {
+    setFilePickerDefaultPath(preferredPath ?? authDirectoryPath ?? snapshotDirectoryPath ?? null);
+    setIsAddModalOpen(true);
+  }, [authDirectoryPath, snapshotDirectoryPath]);
+
+  const openImportSnapshotModal = useCallback(async () => {
+    let refreshedSession = currentSession;
+
+    try {
+      refreshedSession = await refreshCurrentSession();
+    } catch (error) {
+      console.error("Failed to refresh current session before import:", getErrorMessage(error));
+    }
+
+    const refreshedAuthDir = getParentDirectory(refreshedSession?.auth_file_path);
+    openAddAccountModal(
+      refreshedSession?.snapshots_dir_path ?? snapshotDirectoryPath ?? refreshedAuthDir ?? authDirectoryPath ?? null,
+    );
+  }, [authDirectoryPath, currentSession, openAddAccountModal, refreshCurrentSession, snapshotDirectoryPath]);
 
   const summary = useMemo(() => summarizeAccounts(accounts), [accounts]);
 
@@ -179,7 +225,9 @@ function App() {
             summary={currentSession}
             onRefresh={refreshCurrentSession}
             onSaveSnapshot={handleSaveSnapshot}
-            onImportSnapshot={openAddAccountModal}
+            onImportSnapshot={() => {
+              void openImportSnapshotModal();
+            }}
           />
         </section>
 
@@ -204,7 +252,7 @@ function App() {
       <AddAccountModal
         isOpen={isAddModalOpen}
         onClose={closeAddAccountModal}
-        snapshotsDirPath={snapshotsDirPath}
+        snapshotsDirPath={filePickerDefaultPath}
         existingAccountNames={accounts.map((account) => account.name)}
         onImportFile={importFromFile}
         onStartOAuth={startOAuthLogin}
