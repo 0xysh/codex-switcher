@@ -26,6 +26,7 @@ function App() {
     loading,
     error,
     currentSession,
+    snapshotsDirPath,
     refreshUsage,
     refreshCurrentSession,
     refreshSingleUsage,
@@ -180,6 +181,7 @@ function App() {
       <AddAccountModal
         isOpen={isAddModalOpen}
         onClose={closeAddAccountModal}
+        snapshotsDirPath={snapshotsDirPath}
         existingAccountNames={accounts.map((account) => account.name)}
         onImportFile={importFromFile}
         onStartOAuth={startOAuthLogin}

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
-import { openUrlMock } from "../../test/mocks/tauri";
+import { openDialogMock, openUrlMock } from "../../test/mocks/tauri";
 import { AddAccountModal } from "../AddAccountModal";
 
 it("has accessible close button and labeled account name input", () => {
@@ -147,4 +147,30 @@ it("keeps account name input focus during parent rerenders", async () => {
   rerender(<AddAccountModal {...modalProps} onClose={vi.fn()} />);
 
   expect(input).toHaveFocus();
+});
+
+it("opens import picker in snapshots directory when provided", async () => {
+  openDialogMock.mockResolvedValueOnce(null);
+
+  const user = userEvent.setup();
+  render(
+    <AddAccountModal
+      isOpen
+      snapshotsDirPath="/Users/test/.codex-switcher/snapshots"
+      onClose={vi.fn()}
+      onImportFile={vi.fn(async () => {})}
+      onStartOAuth={vi.fn(async () => ({ auth_url: "https://auth.openai.com/oauth/authorize?state=test" }))}
+      onCompleteOAuth={vi.fn(async () => ({}))}
+      onCancelOAuth={vi.fn(async () => {})}
+    />,
+  );
+
+  await user.click(screen.getByRole("tab", { name: /import auth\.json/i }));
+  await user.click(screen.getByRole("button", { name: /browse/i }));
+
+  expect(openDialogMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      defaultPath: "/Users/test/.codex-switcher/snapshots",
+    }),
+  );
 });

@@ -27,6 +27,7 @@ function isTrustedOAuthUrl(url: string): boolean {
 interface AddAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
+  snapshotsDirPath?: string | null;
   existingAccountNames?: string[];
   onImportFile: (path: string, name: string) => Promise<void>;
   onStartOAuth: (name: string) => Promise<{ auth_url: string }>;
@@ -37,6 +38,7 @@ interface AddAccountModalProps {
 export function AddAccountModal({
   isOpen,
   onClose,
+  snapshotsDirPath = null,
   existingAccountNames = [],
   onImportFile,
   onStartOAuth,
@@ -201,6 +203,7 @@ export function AddAccountModal({
     try {
       const selected = await open({
         multiple: false,
+        defaultPath: snapshotsDirPath ?? undefined,
         filters: [
           {
             name: "JSON",
