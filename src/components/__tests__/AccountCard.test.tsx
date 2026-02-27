@@ -17,7 +17,6 @@ it("uses the same controls layout for active and inactive cards without switch C
           created_at: new Date().toISOString(),
           last_used_at: null,
         }}
-        onSwitch={() => {}}
         onDelete={() => {}}
         onRefresh={async () => {}}
         onRename={async () => {}}
@@ -35,7 +34,6 @@ it("uses the same controls layout for active and inactive cards without switch C
           created_at: new Date().toISOString(),
           last_used_at: null,
         }}
-        onSwitch={() => {}}
         onDelete={() => {}}
         onRefresh={async () => {}}
         onRename={async () => {}}

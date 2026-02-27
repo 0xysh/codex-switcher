@@ -7,14 +7,12 @@ import {
   Button,
   IconActivity,
   IconAlertTriangle,
-  IconArrowRightLeft,
   IconCheck,
   IconClock,
   IconEye,
   IconEyeOff,
   IconButton,
   IconKey,
-  IconPanelRight,
   IconRefresh,
   IconShieldCheck,
   IconTrash,
@@ -22,16 +20,11 @@ import {
 
 interface AccountCardProps {
   account: AccountWithUsage;
-  onSwitch: () => void;
   onDelete: () => void;
   onRefresh: () => Promise<void>;
   onRename: (newName: string) => Promise<void>;
-  switching?: boolean;
-  switchDisabled?: boolean;
   masked?: boolean;
-  selected?: boolean;
   onToggleMask?: () => void;
-  onViewDetails?: () => void;
 }
 
 function formatLastRefresh(date: Date | null): string {
@@ -83,16 +76,11 @@ function getUsageStatus(account: AccountWithUsage) {
 
 export function AccountCard({
   account,
-  onSwitch,
   onDelete,
   onRefresh,
   onRename,
-  switching,
-  switchDisabled,
   masked = false,
-  selected = false,
   onToggleMask,
-  onViewDetails,
 }: AccountCardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(
@@ -167,7 +155,7 @@ export function AccountCard({
   return (
     <article
       className={`surface-panel relative p-5 transition-[transform,border-color,box-shadow] duration-200 ${
-        selected
+        account.is_active
           ? "border-[var(--accent-secondary)] shadow-[var(--shadow-raised)]"
           : "hover:-translate-y-[1px] hover:border-[var(--border-strong)]"
       } ${account.is_active ? "border-[var(--accent-primary)]" : ""}`}
@@ -184,7 +172,7 @@ export function AccountCard({
               </span>
             ) : (
               <span className="chip">
-                <IconArrowRightLeft className="h-3.5 w-3.5" />
+                <IconActivity className="h-3.5 w-3.5" />
                 Standby
               </span>
             )}
@@ -242,11 +230,6 @@ export function AccountCard({
               {masked ? <IconEye className="h-4 w-4" /> : <IconEyeOff className="h-4 w-4" />}
             </IconButton>
           )}
-          {onViewDetails && (
-            <IconButton aria-label="View Account Details" onClick={onViewDetails}>
-              <IconPanelRight className="h-4 w-4" />
-            </IconButton>
-          )}
         </div>
       </header>
 
@@ -270,46 +253,19 @@ export function AccountCard({
         <span className="mono-data">{formatLastRefresh(lastRefresh)}</span>
       </div>
 
-      {switchDisabled && !account.is_active && (
-        <div className="mb-4 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-soft)] px-3 py-2 text-xs text-[var(--warning)]">
-          Close all running Codex processes before switching accounts.
-        </div>
-      )}
-
       <footer className="flex items-center gap-2">
-        {account.is_active ? (
-          <Button
-            variant="secondary"
-            size="md"
-            className="flex-1 border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-primary)]"
-            disabled
-          >
-            <IconCheck className="h-4 w-4" />
-            Active Now
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            size="md"
-            className="flex-1"
-            onClick={onSwitch}
-            disabled={switching || switchDisabled}
-          >
-            <IconArrowRightLeft className="h-4 w-4" />
-            {switching ? "Switching…" : "Switch Now"}
-          </Button>
-        )}
-
-        <IconButton
-          aria-label="Refresh Usage"
+        <Button
+          variant="secondary"
+          size="md"
+          className="flex-1"
           onClick={() => {
             void handleRefresh();
           }}
           disabled={isRefreshing}
-          tone="accent"
         >
           <IconRefresh className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-        </IconButton>
+          {isRefreshing ? "Refreshing…" : "Refresh Usage"}
+        </Button>
 
         <IconButton aria-label="Remove Account" onClick={onDelete} tone="danger">
           <IconTrash className="h-4 w-4" />

@@ -1,38 +1,26 @@
-import type { RefObject } from "react";
-
 import type { ThemePreference } from "../../../hooks/useTheme";
 import type { AccountSummary } from "../types";
 import {
   Button,
-  IconCommand,
   IconPlus,
   IconRefresh,
-  IconSearch,
   IconSparkles,
   ThemeToggle,
 } from "../../../components/ui";
 
 interface WorkbenchHeaderProps {
-  query: string;
   isRefreshing: boolean;
   summary: AccountSummary;
-  searchInputRef: RefObject<HTMLInputElement | null>;
   themePreference: ThemePreference;
-  onQueryChange: (value: string) => void;
-  onOpenQuickSwitch: () => void;
   onRefreshUsage: () => void;
   onOpenAddAccount: () => void;
   onThemeChange: (value: ThemePreference) => void;
 }
 
 export function WorkbenchHeader({
-  query,
   isRefreshing,
   summary,
-  searchInputRef,
   themePreference,
-  onQueryChange,
-  onOpenQuickSwitch,
   onRefreshUsage,
   onOpenAddAccount,
   onThemeChange,
@@ -62,31 +50,7 @@ export function WorkbenchHeader({
           </div>
 
           <div className="flex flex-1 flex-col gap-3 xl:max-w-2xl xl:flex-row xl:items-center xl:justify-end">
-            <label
-              htmlFor="account-search"
-              className="flex h-11 w-full items-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3 xl:max-w-md"
-            >
-              <IconSearch className="h-4 w-4 text-muted" />
-              <input
-                ref={searchInputRef}
-                id="account-search"
-                type="text"
-                value={query}
-                onChange={(event) => onQueryChange(event.target.value)}
-                placeholder="Search account name or email"
-                className="w-full border-0 bg-transparent text-sm text-[var(--text-primary)]"
-              />
-              <span className="mono-data hidden rounded-md border border-[var(--border-soft)] px-1.5 py-0.5 text-[10px] text-muted md:inline-flex">
-                /
-              </span>
-            </label>
-
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="secondary" onClick={onOpenQuickSwitch}>
-                <IconCommand className="h-4 w-4" />
-                Quick switch
-              </Button>
-
               <Button variant="secondary" disabled={isRefreshing} onClick={onRefreshUsage}>
                 <IconRefresh className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
                 Refresh usage

@@ -1,25 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
-import { AddAccountModal, QuickSwitchDialog } from "./components";
+import { AddAccountModal } from "./components";
 import { IconCheck, LiveRegion } from "./components/ui";
 import {
   AccountWorkspaceContent,
-  AccountWorkspaceControls,
-  ActiveWorkspacePanel,
-  filterAndSortAccounts,
   InspectorSidebar,
   summarizeAccounts,
-  summarizeSafety,
-  SwitchSafetyPanel,
   useActivityFeed,
   useProcessMonitor,
-  useWorkbenchHotkeys,
   WorkbenchHeader,
 } from "./features/workbench";
 import { useAccounts } from "./hooks/useAccounts";
 import { useTheme } from "./hooks/useTheme";
 import { useUiPreferences } from "./hooks/useUiPreferences";
-import type { AccountFilter, AccountSort } from "./features/workbench";
 import "./App.css";
 
 function getErrorMessage(error: unknown): string {
@@ -33,7 +26,6 @@ function App() {
     error,
     refreshUsage,
     refreshSingleUsage,
-    switchAccount,
     deleteAccount,
     renameAccount,
     importFromFile,
@@ -44,105 +36,19 @@ function App() {
 
   const { maskedAccountIdSet, toggleMaskedAccountId } = useUiPreferences();
   const { themePreference, setThemePreference } = useTheme();
-  const { processInfo, refreshProcessInfo } = useProcessMonitor();
+  const { processInfo } = useProcessMonitor();
   const { activity, pushActivity } = useActivityFeed();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isQuickSwitchOpen, setIsQuickSwitchOpen] = useState(false);
-  const [quickSwitchQuery, setQuickSwitchQuery] = useState("");
-
-  const [switchingId, setSwitchingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
   const [announcement, setAnnouncement] = useState<string | null>(null);
 
-  const [query, setQuery] = useState("");
-  const [accountFilter, setAccountFilter] = useState<AccountFilter>("all");
-  const [accountSort, setAccountSort] = useState<AccountSort>("recent");
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
-
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const closeAddAccountModal = useCallback(() => setIsAddModalOpen(false), []);
   const openAddAccountModal = useCallback(() => setIsAddModalOpen(true), []);
 
-  useWorkbenchHotkeys({
-    isQuickSwitchOpen,
-    onOpenQuickSwitch: () => setIsQuickSwitchOpen(true),
-    onCloseQuickSwitch: () => setIsQuickSwitchOpen(false),
-    searchInputRef,
-  });
-
-  const activeAccount = useMemo(() => {
-    return accounts.find((account) => account.is_active) || null;
-  }, [accounts]);
-
-  const filteredAccounts = useMemo(() => {
-    return filterAndSortAccounts({
-      accounts,
-      query,
-      filter: accountFilter,
-      sort: accountSort,
-    });
-  }, [accountFilter, accountSort, accounts, query]);
-
-  const visibleOtherAccounts = useMemo(() => {
-    return filteredAccounts.filter((account) => !account.is_active);
-  }, [filteredAccounts]);
-
-  useEffect(() => {
-    if (!accounts.length) {
-      setSelectedAccountId(null);
-      return;
-    }
-
-    if (selectedAccountId && accounts.some((account) => account.id === selectedAccountId)) {
-      return;
-    }
-
-    setSelectedAccountId(activeAccount?.id ?? accounts[0].id);
-  }, [accounts, activeAccount, selectedAccountId]);
-
-  const selectedAccount = useMemo(() => {
-    if (!selectedAccountId) {
-      return activeAccount;
-    }
-
-    return accounts.find((account) => account.id === selectedAccountId) ?? activeAccount;
-  }, [accounts, activeAccount, selectedAccountId]);
-
   const summary = useMemo(() => summarizeAccounts(accounts), [accounts]);
-
-  const handleSwitch = useCallback(
-    async (accountId: string) => {
-      const latestProcessInfo = await refreshProcessInfo();
-      const canSwitch = !latestProcessInfo || latestProcessInfo.can_switch;
-
-      if (!canSwitch) {
-        setAnnouncement("Switching blocked until running Codex processes close.");
-        pushActivity("warning", "Switch blocked by running Codex process.");
-        return;
-      }
-
-      try {
-        setSwitchingId(accountId);
-        await switchAccount(accountId);
-        setSelectedAccountId(accountId);
-        setAnnouncement("Account switched successfully.");
-        pushActivity("success", "Switched active account.");
-        setIsQuickSwitchOpen(false);
-        setQuickSwitchQuery("");
-      } catch (error) {
-        console.error("Failed to switch account:", getErrorMessage(error));
-        setAnnouncement("Failed to switch account.");
-        pushActivity("warning", "Switch attempt failed.");
-      } finally {
-        setSwitchingId(null);
-        void refreshProcessInfo();
-      }
-    },
-    [pushActivity, refreshProcessInfo, switchAccount],
-  );
 
   const handleDelete = useCallback(
     async (accountId: string) => {
@@ -191,9 +97,6 @@ function App() {
     }
   }, [pushActivity, refreshUsage]);
 
-  const processSummary = summarizeSafety(processInfo);
-  const hasRunningProcesses = !!processInfo && processInfo.count > 0;
-
   return (
     <div className="app-shell">
       <a
@@ -204,13 +107,9 @@ function App() {
       </a>
 
       <WorkbenchHeader
-        query={query}
         isRefreshing={isRefreshing}
         summary={summary}
-        searchInputRef={searchInputRef}
         themePreference={themePreference}
-        onQueryChange={setQuery}
-        onOpenQuickSwitch={() => setIsQuickSwitchOpen(true)}
         onRefreshUsage={() => {
           void handleRefresh();
         }}
@@ -220,34 +119,12 @@ function App() {
 
       <main id="main-content" className="mx-auto grid max-w-7xl gap-5 px-4 pb-10 sm:px-6 lg:grid-cols-[1.3fr_0.9fr]">
         <section className="space-y-5">
-          <SwitchSafetyPanel processInfo={processInfo} processSummary={processSummary} />
-
-          {activeAccount && <ActiveWorkspacePanel account={activeAccount} summary={summary} />}
-
-          <AccountWorkspaceControls
-            accountFilter={accountFilter}
-            accountSort={accountSort}
-            summary={summary}
-            onFilterChange={setAccountFilter}
-            onSortChange={setAccountSort}
-          />
-
           <AccountWorkspaceContent
             accounts={accounts}
-            filteredAccounts={filteredAccounts}
-            visibleOtherAccounts={visibleOtherAccounts}
-            activeAccount={activeAccount}
-            selectedAccountId={selectedAccountId}
-            switchingId={switchingId}
             maskedAccountIdSet={maskedAccountIdSet}
             loading={loading}
             error={error}
-            hasRunningProcesses={hasRunningProcesses}
             onOpenAddAccount={openAddAccountModal}
-            onSelectAccount={setSelectedAccountId}
-            onSwitch={(accountId) => {
-              void handleSwitch(accountId);
-            }}
             onDelete={(accountId) => {
               void handleDelete(accountId);
             }}
@@ -257,7 +134,7 @@ function App() {
           />
         </section>
 
-        <InspectorSidebar selectedAccount={selectedAccount} activity={activity} />
+        <InspectorSidebar processInfo={processInfo} activity={activity} />
       </main>
 
       {refreshSuccess && (
@@ -283,16 +160,6 @@ function App() {
         onStartOAuth={startOAuthLogin}
         onCompleteOAuth={completeOAuthLogin}
         onCancelOAuth={cancelOAuthLogin}
-      />
-
-      <QuickSwitchDialog
-        isOpen={isQuickSwitchOpen}
-        query={quickSwitchQuery}
-        switchingId={switchingId}
-        accounts={accounts}
-        onClose={() => setIsQuickSwitchOpen(false)}
-        onQueryChange={setQuickSwitchQuery}
-        onSwitch={handleSwitch}
       />
 
       <LiveRegion label="Global Announcements" message={announcement} />

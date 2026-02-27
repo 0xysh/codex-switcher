@@ -4,18 +4,10 @@ import type { AccountWithUsage } from "../../../types";
 
 interface AccountWorkspaceContentProps {
   accounts: AccountWithUsage[];
-  filteredAccounts: AccountWithUsage[];
-  visibleOtherAccounts: AccountWithUsage[];
-  activeAccount: AccountWithUsage | null;
-  selectedAccountId: string | null;
-  switchingId: string | null;
-  maskedAccountIdSet: Set<string>;
   loading: boolean;
   error: string | null;
-  hasRunningProcesses: boolean;
+  maskedAccountIdSet: Set<string>;
   onOpenAddAccount: () => void;
-  onSelectAccount: (accountId: string) => void;
-  onSwitch: (accountId: string) => void;
   onDelete: (accountId: string) => void;
   onRefreshSingleUsage: (accountId: string) => Promise<void>;
   onRename: (accountId: string, newName: string) => Promise<void>;
@@ -24,18 +16,10 @@ interface AccountWorkspaceContentProps {
 
 export function AccountWorkspaceContent({
   accounts,
-  filteredAccounts,
-  visibleOtherAccounts,
-  activeAccount,
-  selectedAccountId,
-  switchingId,
-  maskedAccountIdSet,
   loading,
   error,
-  hasRunningProcesses,
+  maskedAccountIdSet,
   onOpenAddAccount,
-  onSelectAccount,
-  onSwitch,
   onDelete,
   onRefreshSingleUsage,
   onRename,
@@ -63,77 +47,37 @@ export function AccountWorkspaceContent({
     );
   }
 
-  if (filteredAccounts.length === 0) {
+  if (accounts.length === 0) {
     return (
       <div className="surface-panel p-8 text-center">
-        {accounts.length === 0 ? (
-          <>
-            <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent-primary)]">
-              <IconUserCircle className="h-7 w-7" />
-            </div>
-            <h3 className="mt-4 text-xl font-semibold text-[var(--text-primary)]">Start with your first account</h3>
-            <p className="mt-2 text-sm text-secondary">
-              Connect a ChatGPT login or import auth.json. Secrets stay in your system keychain.
-            </p>
-            <div className="mt-5">
-              <Button variant="primary" onClick={onOpenAddAccount}>
-                <IconPlus className="h-4 w-4" />
-                Add account
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">No account matches your filters</h3>
-            <p className="mt-2 text-sm text-secondary">Try changing search, filter, or sorting options.</p>
-          </>
-        )}
+        <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent-primary)]">
+          <IconUserCircle className="h-7 w-7" />
+        </div>
+        <h3 className="mt-4 text-xl font-semibold text-[var(--text-primary)]">Start with your first account</h3>
+        <p className="mt-2 text-sm text-secondary">Connect a ChatGPT login or import an existing auth.json file.</p>
+        <div className="mt-5">
+          <Button variant="primary" onClick={onOpenAddAccount}>
+            <IconPlus className="h-4 w-4" />
+            Add account
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {activeAccount && (
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      {accounts.map((account) => (
         <AccountCard
-          account={activeAccount}
-          selected={selectedAccountId === activeAccount.id}
-          onSwitch={() => {
-            return;
-          }}
-          onDelete={() => {
-            onDelete(activeAccount.id);
-          }}
-          onRefresh={() => onRefreshSingleUsage(activeAccount.id)}
-          onRename={(newName: string) => onRename(activeAccount.id, newName)}
-          onViewDetails={() => onSelectAccount(activeAccount.id)}
-          switching={switchingId === activeAccount.id}
-          switchDisabled={hasRunningProcesses}
-          masked={maskedAccountIdSet.has(activeAccount.id)}
-          onToggleMask={() => onToggleMask(activeAccount.id)}
+          key={account.id}
+          account={account}
+          onDelete={() => onDelete(account.id)}
+          onRefresh={() => onRefreshSingleUsage(account.id)}
+          onRename={(newName: string) => onRename(account.id, newName)}
+          masked={maskedAccountIdSet.has(account.id)}
+          onToggleMask={() => onToggleMask(account.id)}
         />
-      )}
-
-      {visibleOtherAccounts.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {visibleOtherAccounts.map((account) => (
-            <AccountCard
-              key={account.id}
-              account={account}
-              selected={selectedAccountId === account.id}
-              onSwitch={() => onSwitch(account.id)}
-              onDelete={() => onDelete(account.id)}
-              onRefresh={() => onRefreshSingleUsage(account.id)}
-              onRename={(newName: string) => onRename(account.id, newName)}
-              onViewDetails={() => onSelectAccount(account.id)}
-              switching={switchingId === account.id}
-              switchDisabled={hasRunningProcesses}
-              masked={maskedAccountIdSet.has(account.id)}
-              onToggleMask={() => onToggleMask(account.id)}
-            />
-          ))}
-        </div>
-      )}
+      ))}
     </div>
   );
 }
