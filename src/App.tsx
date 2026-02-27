@@ -4,6 +4,7 @@ import { AddAccountModal } from "./components";
 import { IconCheck, LiveRegion } from "./components/ui";
 import {
   AccountWorkspaceContent,
+  CurrentCodexSessionCard,
   InspectorSidebar,
   summarizeAccounts,
   useActivityFeed,
@@ -24,8 +25,11 @@ function App() {
     accounts,
     loading,
     error,
+    currentSession,
     refreshUsage,
+    refreshCurrentSession,
     refreshSingleUsage,
+    saveCurrentSessionSnapshot,
     deleteAccount,
     renameAccount,
     importFromFile,
@@ -97,6 +101,20 @@ function App() {
     }
   }, [pushActivity, refreshUsage]);
 
+  const handleSaveSnapshot = useCallback(async () => {
+    try {
+      const snapshotPath = await saveCurrentSessionSnapshot();
+      setAnnouncement("Snapshot saved.");
+      pushActivity("success", `Session snapshot saved at ${snapshotPath}.`);
+      return snapshotPath;
+    } catch (error) {
+      console.error("Failed to save session snapshot:", getErrorMessage(error));
+      setAnnouncement("Failed to save snapshot.");
+      pushActivity("warning", "Session snapshot save failed.");
+      throw error;
+    }
+  }, [pushActivity, saveCurrentSessionSnapshot]);
+
   return (
     <div className="app-shell">
       <a
@@ -119,6 +137,13 @@ function App() {
 
       <main id="main-content" className="mx-auto grid max-w-7xl gap-5 px-4 pb-10 sm:px-6 lg:grid-cols-[1.3fr_0.9fr]">
         <section className="space-y-5">
+          <CurrentCodexSessionCard
+            summary={currentSession}
+            onRefresh={refreshCurrentSession}
+            onSaveSnapshot={handleSaveSnapshot}
+            onImportSnapshot={openAddAccountModal}
+          />
+
           <AccountWorkspaceContent
             accounts={accounts}
             maskedAccountIdSet={maskedAccountIdSet}
