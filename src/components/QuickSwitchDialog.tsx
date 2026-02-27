@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useDialogFocusTrap } from "../hooks/useDialogFocusTrap";
 import type { AccountWithUsage } from "../types";
@@ -31,6 +31,7 @@ export function QuickSwitchDialog({
   onSwitch,
 }: QuickSwitchDialogProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const filteredAccounts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -46,7 +47,40 @@ export function QuickSwitchDialog({
     });
   }, [accounts, query]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (filteredAccounts.length === 0) {
+      setActiveIndex(0);
+      return;
+    }
+
+    const activeAccountIndex = filteredAccounts.findIndex((account) => account.is_active);
+    setActiveIndex(activeAccountIndex >= 0 ? activeAccountIndex : 0);
+  }, [filteredAccounts, isOpen]);
+
   useDialogFocusTrap({ isOpen, containerRef: dialogRef, onRequestClose: onClose });
+
+  const moveActiveIndex = (direction: 1 | -1) => {
+    if (filteredAccounts.length === 0) {
+      return;
+    }
+
+    setActiveIndex((current) => {
+      return (current + direction + filteredAccounts.length) % filteredAccounts.length;
+    });
+  };
+
+  const switchActiveAccount = (index: number) => {
+    const targetAccount = filteredAccounts[index];
+    if (!targetAccount || switchingId === targetAccount.id) {
+      return;
+    }
+
+    void onSwitch(targetAccount.id);
+  };
 
   if (!isOpen) {
     return null;
@@ -84,6 +118,24 @@ export function QuickSwitchDialog({
               type="text"
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  moveActiveIndex(1);
+                  return;
+                }
+
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  moveActiveIndex(-1);
+                  return;
+                }
+
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  switchActiveAccount(activeIndex);
+                }
+              }}
               placeholder="Search account name or email"
               className="w-full border-0 bg-transparent text-sm text-[var(--text-primary)]"
               autoFocus
@@ -98,17 +150,23 @@ export function QuickSwitchDialog({
             </p>
           ) : (
             <ul className="space-y-2">
-              {filteredAccounts.map((account) => {
+              {filteredAccounts.map((account, index) => {
                 const isSwitching = switchingId === account.id;
+                const isHighlighted = index === activeIndex;
 
                 return (
                   <li key={account.id}>
                     <button
                       type="button"
-                      className="w-full cursor-pointer rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-4 py-3 text-left transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--bg-surface-elevated)]"
+                      className={`w-full cursor-pointer rounded-xl border px-4 py-3 text-left transition-colors ${
+                        isHighlighted
+                          ? "border-[var(--accent-border)] bg-[var(--accent-soft)]"
+                          : "border-[var(--border-soft)] bg-[var(--bg-surface)] hover:border-[var(--accent-border)] hover:bg-[var(--bg-surface-elevated)]"
+                      }`}
                       onClick={() => {
                         void onSwitch(account.id);
                       }}
+                      onMouseEnter={() => setActiveIndex(index)}
                       disabled={isSwitching}
                     >
                       <div className="flex items-center justify-between gap-3">
@@ -138,9 +196,9 @@ export function QuickSwitchDialog({
         </div>
 
         <footer className="flex items-center justify-between border-t border-[var(--border-soft)] px-5 py-3 text-xs text-muted">
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-2">
             <IconCommand className="h-3.5 w-3.5" />
-            Ctrl/Cmd + K opens this panel
+            Ctrl/Cmd + K opens this panel · ↑↓ move · Enter switch
           </span>
           <Button size="sm" variant="ghost" onClick={onClose}>
             Close

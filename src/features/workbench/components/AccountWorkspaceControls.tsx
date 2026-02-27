@@ -1,9 +1,10 @@
 import { IconFilter } from "../../../components/ui";
-import type { AccountFilter, AccountSort } from "../types";
+import type { AccountFilter, AccountSort, AccountSummary } from "../types";
 
 interface AccountWorkspaceControlsProps {
   accountFilter: AccountFilter;
   accountSort: AccountSort;
+  summary: AccountSummary;
   onFilterChange: (filter: AccountFilter) => void;
   onSortChange: (sort: AccountSort) => void;
 }
@@ -18,9 +19,17 @@ const FILTER_OPTIONS: Array<{ value: AccountFilter; label: string }> = [
 export function AccountWorkspaceControls({
   accountFilter,
   accountSort,
+  summary,
   onFilterChange,
   onSortChange,
 }: AccountWorkspaceControlsProps) {
+  const filterCountByKey: Record<AccountFilter, number> = {
+    all: summary.total,
+    oauth: summary.oauth,
+    imported: summary.imported,
+    attention: summary.attention,
+  };
+
   return (
     <div className="surface-panel px-4 py-4 sm:px-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -50,13 +59,22 @@ export function AccountWorkspaceControls({
               key={filterOption.value}
               type="button"
               onClick={() => onFilterChange(filterOption.value)}
-              className={`inline-flex h-11 cursor-pointer items-center rounded-full border px-4 text-sm font-semibold transition-colors ${
+            className={`inline-flex h-11 cursor-pointer items-center rounded-full border px-4 text-sm font-semibold transition-colors ${
                 isActive
                   ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-primary)]"
                   : "border-[var(--border-soft)] bg-[var(--bg-surface)] text-secondary hover:border-[var(--border-strong)]"
               }`}
             >
               {filterOption.label}
+              <span
+                className={`mono-data ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] leading-5 ${
+                  isActive
+                    ? "bg-[var(--bg-surface)] text-[var(--accent-primary)]"
+                    : "bg-[var(--bg-surface-elevated)] text-[var(--text-muted)]"
+                }`}
+              >
+                {filterCountByKey[filterOption.value]}
+              </span>
             </button>
           );
         })}

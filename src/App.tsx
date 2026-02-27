@@ -204,6 +204,7 @@ function App() {
       <WorkbenchHeader
         query={query}
         isRefreshing={isRefreshing}
+        summary={summary}
         searchInputRef={searchInputRef}
         themePreference={themePreference}
         onQueryChange={setQuery}
@@ -224,6 +225,7 @@ function App() {
           <AccountWorkspaceControls
             accountFilter={accountFilter}
             accountSort={accountSort}
+            summary={summary}
             onFilterChange={setAccountFilter}
             onSortChange={setAccountSort}
           />
@@ -257,7 +259,7 @@ function App() {
       </main>
 
       {refreshSuccess && (
-        <div className="fixed bottom-6 right-6 rounded-xl border border-[var(--success-border)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)] shadow-[var(--shadow-soft)]">
+        <div className="toast-pop fixed bottom-6 right-6 rounded-xl border border-[var(--success-border)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)] shadow-[var(--shadow-soft)]">
           <span className="inline-flex items-center gap-2">
             <IconCheck className="h-4 w-4" />
             Usage refreshed successfully
@@ -266,7 +268,7 @@ function App() {
       )}
 
       {deleteConfirmId && (
-        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)] shadow-[var(--shadow-soft)]">
+        <div className="toast-pop fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)] shadow-[var(--shadow-soft)]">
           Press delete again to confirm account removal.
         </div>
       )}
