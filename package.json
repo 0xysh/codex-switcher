@@ -11,7 +11,8 @@
     "tauri": "sh ./scripts/tauri.sh",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:a11y": "vitest run --reporter=verbose"
+    "test:a11y": "vitest run --reporter=verbose",
+    "check:ui": "pnpm exec tsc --noEmit && pnpm test && pnpm build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
