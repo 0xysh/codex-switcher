@@ -1,8 +1,10 @@
+import type { CardDensityMode } from "../../../hooks/useUiPreferences";
 import type { ThemePreference } from "../../../hooks/useTheme";
 import type { AccountSummary } from "../types";
 import type { CodexProcessInfo } from "../../../types";
 import {
   Button,
+  IconPanelRight,
   IconPlus,
   IconRefresh,
   IconSparkles,
@@ -13,9 +15,11 @@ interface WorkbenchHeaderProps {
   isRefreshing: boolean;
   summary: AccountSummary;
   processInfo: CodexProcessInfo | null;
+  cardDensityMode: CardDensityMode;
   themePreference: ThemePreference;
   onRefreshUsage: () => void;
   onOpenAddAccount: () => void;
+  onToggleCardDensityMode: () => void;
   onThemeChange: (value: ThemePreference) => void;
 }
 
@@ -51,9 +55,11 @@ export function WorkbenchHeader({
   isRefreshing,
   summary,
   processInfo,
+  cardDensityMode,
   themePreference,
   onRefreshUsage,
   onOpenAddAccount,
+  onToggleCardDensityMode,
   onThemeChange,
 }: WorkbenchHeaderProps) {
   const blockingSummary = getBlockingSummary(processInfo);
@@ -96,25 +102,39 @@ export function WorkbenchHeader({
           <aside className="reveal-rise stagger-1 rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-surface)] p-3.5 shadow-[var(--shadow-soft)] xl:ml-auto xl:w-full">
             <p className="mono-data mb-2 text-[10px] uppercase tracking-[0.18em] text-muted">Control Rail</p>
 
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-              <Button
-                variant="secondary"
-                className="min-h-11 w-full justify-center"
-                disabled={isRefreshing}
-                onClick={onRefreshUsage}
-              >
-                <IconRefresh className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                Refresh Usage
-              </Button>
+            <div className="grid gap-2">
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant="secondary"
+                  className="min-h-11 w-full justify-center px-2 text-[11px] sm:text-xs"
+                  disabled={isRefreshing}
+                  onClick={onRefreshUsage}
+                >
+                  <IconRefresh className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                  Refresh Usage
+                </Button>
 
-              <Button variant="primary" className="min-h-11 w-full justify-center" onClick={onOpenAddAccount}>
-                <IconPlus className="h-4 w-4" />
-                Add Account
-              </Button>
+                <Button
+                  variant="primary"
+                  className="min-h-11 w-full justify-center px-2 text-[11px] sm:text-xs"
+                  onClick={onOpenAddAccount}
+                >
+                  <IconPlus className="h-4 w-4" />
+                  Add Account
+                </Button>
 
-              <div className="sm:col-span-2 xl:col-span-1 pt-1">
-                <ThemeToggle value={themePreference} onChange={onThemeChange} />
+                <Button
+                  variant="secondary"
+                  className="min-h-11 w-full justify-center px-2 text-[11px] sm:text-xs"
+                  aria-pressed={cardDensityMode === "compact"}
+                  onClick={onToggleCardDensityMode}
+                >
+                  <IconPanelRight className="h-4 w-4" />
+                  {cardDensityMode === "full" ? "Compact View" : "Full View"}
+                </Button>
               </div>
+
+              <ThemeToggle value={themePreference} onChange={onThemeChange} />
             </div>
           </aside>
         </div>

@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -14,6 +14,8 @@ vi.mock("./hooks/useAccounts", () => ({
 }));
 
 beforeEach(() => {
+  window.localStorage.clear();
+
   useAccountsMock.mockReturnValue(createUseAccountsMock());
   invokeMock.mockImplementation(async (command: string) => {
     if (command === "check_codex_processes") {
@@ -160,6 +162,33 @@ it("removes inspector, shortcuts, quick switch, and search UI", async () => {
   expect(
     screen.queryByPlaceholderText(/search account name or email/i)
   ).not.toBeInTheDocument();
+});
+
+it("renders control rail as three top actions and three theme options", async () => {
+  render(<App />);
+
+  const controlRail = (await screen.findByText(/control rail/i)).closest("aside");
+  expect(controlRail).not.toBeNull();
+
+  const scoped = within(controlRail!);
+
+  expect(scoped.getByRole("button", { name: /refresh usage/i })).toBeInTheDocument();
+  expect(scoped.getByRole("button", { name: /add account/i })).toBeInTheDocument();
+  expect(scoped.getByRole("button", { name: /compact view/i })).toBeInTheDocument();
+
+  expect(scoped.getByRole("radio", { name: /light/i })).toBeInTheDocument();
+  expect(scoped.getByRole("radio", { name: /dark/i })).toBeInTheDocument();
+  expect(scoped.getByRole("radio", { name: /random/i })).toBeInTheDocument();
+});
+
+it("toggles compact/full button label when density mode changes", async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  const compactButton = await screen.findByRole("button", { name: /compact view/i });
+  await user.click(compactButton);
+
+  expect(await screen.findByRole("button", { name: /full view/i })).toBeInTheDocument();
 });
 
 it("keeps recent activity and blocking pid status visible", async () => {

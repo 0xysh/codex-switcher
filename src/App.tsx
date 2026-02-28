@@ -13,6 +13,7 @@ import {
 } from "./features/workbench";
 import { useAccounts } from "./hooks/useAccounts";
 import { useTheme } from "./hooks/useTheme";
+import { useUiPreferences } from "./hooks/useUiPreferences";
 import "./App.css";
 
 function getErrorMessage(error: unknown): string {
@@ -54,6 +55,7 @@ function App() {
   } = useAccounts();
 
   const { themePreference, setThemePreference } = useTheme();
+  const { cardDensityMode, setCardDensityMode } = useUiPreferences();
   const { processInfo } = useProcessMonitor();
   const { activity, pushActivity } = useActivityFeed();
 
@@ -202,6 +204,18 @@ function App() {
     [pushActivity, reorderAccounts],
   );
 
+  const toggleCardDensityMode = useCallback(() => {
+    const nextMode = cardDensityMode === "full" ? "compact" : "full";
+    setCardDensityMode(nextMode);
+
+    const message = nextMode === "compact"
+      ? "Compact account card view enabled."
+      : "Full account card view enabled.";
+
+    setAnnouncement(message);
+    pushActivity("neutral", message);
+  }, [cardDensityMode, pushActivity, setCardDensityMode]);
+
   return (
     <div className="app-shell">
       <a
@@ -215,11 +229,13 @@ function App() {
         isRefreshing={isRefreshing}
         summary={summary}
         processInfo={processInfo}
+        cardDensityMode={cardDensityMode}
         themePreference={themePreference}
         onRefreshUsage={() => {
           void handleRefresh();
         }}
         onOpenAddAccount={openAddAccountModal}
+        onToggleCardDensityMode={toggleCardDensityMode}
         onThemeChange={setThemePreference}
       />
 
