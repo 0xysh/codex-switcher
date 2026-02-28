@@ -7,7 +7,6 @@ import {
   IconPanelRight,
   IconPlus,
   IconRefresh,
-  IconSparkles,
   ThemeToggle,
 } from "../../../components/ui";
 
@@ -77,26 +76,10 @@ export function WorkbenchHeader({
         />
 
         <div className="relative grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(19.5rem,23.5rem)] xl:items-stretch">
-          <section className="reveal-rise min-w-0 rounded-3xl border border-[var(--border-soft)] bg-gradient-to-br from-[var(--bg-surface)] to-[var(--bg-surface-elevated)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
-            <div className="flex items-start gap-4">
-              <div className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[var(--accent-border)] bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-[0_18px_34px_rgb(20_80_182_/_.34)]">
-                <IconSparkles className="h-6 w-6" />
-              </div>
-
-              <div className="min-w-0">
-                <span className="mono-data inline-flex rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--accent-primary)]">
-                  Operations Workbench
-                </span>
-
-                <h1 className="mt-3 text-[2.08rem] font-semibold tracking-tight text-[var(--text-primary)] sm:text-[2.55rem]">
-                  Codex Usage Inspector
-                </h1>
-
-                <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-secondary text-pretty sm:text-sm">
-                  Monitor usage, session health, and account status through one high-clarity command surface.
-                </p>
-              </div>
-            </div>
+          <section className="reveal-rise min-w-0 self-center">
+            <h1 className="text-[2.08rem] font-semibold tracking-tight text-[var(--text-primary)] sm:text-[2.55rem]">
+              Codex Usage Inspector
+            </h1>
           </section>
 
           <aside className="reveal-rise stagger-1 rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-surface)] p-3.5 shadow-[var(--shadow-soft)] xl:ml-auto xl:w-full">
@@ -135,23 +118,23 @@ export function WorkbenchHeader({
               </div>
 
               <ThemeToggle value={themePreference} onChange={onThemeChange} />
+
+              <dl className="grid grid-cols-2 gap-2 pt-1">
+                <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
+                  <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Accounts Tracked</dt>
+                  <dd className="mt-1 text-base font-semibold text-[var(--text-primary)]">{formatAccountCount(summary.total)}</dd>
+                </div>
+
+                <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
+                  <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Blocking PIDs</dt>
+                  <dd className={`mono-data mt-1 truncate text-sm font-semibold ${blockingSummary.blockingClass}`} title={blockingSummary.blockingValue}>
+                    {blockingSummary.blockingValue}
+                  </dd>
+                </div>
+              </dl>
             </div>
           </aside>
         </div>
-
-        <dl className="relative mt-4 grid grid-cols-2 gap-2">
-          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
-            <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Accounts Tracked</dt>
-            <dd className="mt-1 text-base font-semibold text-[var(--text-primary)]">{formatAccountCount(summary.total)}</dd>
-          </div>
-
-          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
-            <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Blocking PIDs</dt>
-            <dd className={`mono-data mt-1 truncate text-sm font-semibold ${blockingSummary.blockingClass}`} title={blockingSummary.blockingValue}>
-              {blockingSummary.blockingValue}
-            </dd>
-          </div>
-        </dl>
       </div>
     </header>
   );

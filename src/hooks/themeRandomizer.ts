@@ -13,6 +13,7 @@ const RANDOM_TOKEN_KEYS = [
   "--border-strong",
   "--accent-primary",
   "--accent-secondary",
+  "--accent-foreground",
   "--accent-soft",
   "--accent-border",
   "--accent-highlight",
@@ -37,14 +38,83 @@ export interface RandomThemePalette {
 }
 
 export const RANDOM_THEME_STORAGE_KEY = "codex-switcher:random-theme";
+const CTA_MIN_CONTRAST = 4.5;
+const ACCENT_FOREGROUND_LIGHT = "#ffffff";
+const ACCENT_FOREGROUND_DARK = "#111d30";
+
+interface WeightedHueBand {
+  min: number;
+  max: number;
+  weight: number;
+}
+
+const PREMIUM_SURFACE_HUE_BANDS: WeightedHueBand[] = [
+  { min: 196, max: 226, weight: 6 },
+  { min: 180, max: 195, weight: 3 },
+  { min: 228, max: 244, weight: 2 },
+  { min: 136, max: 162, weight: 2 },
+  { min: 34, max: 56, weight: 1 },
+];
+
+const PREMIUM_ACCENT_HUE_BANDS: WeightedHueBand[] = [
+  { min: 204, max: 230, weight: 6 },
+  { min: 184, max: 203, weight: 4 },
+  { min: 162, max: 183, weight: 3 },
+  { min: 142, max: 161, weight: 2 },
+  { min: 234, max: 252, weight: 2 },
+  { min: 38, max: 56, weight: 1 },
+  { min: 20, max: 34, weight: 1 },
+];
+
+const COMPANION_DELTAS = [18, 24, 30, 36, 42, 48, 54] as const;
+const USAGE_DELTAS = [82, 96, 110, 124, 138, 152] as const;
+const HIGHLIGHT_DELTAS = [72, 96, 120, 144, 168] as const;
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function randomHueFromBands(bands: readonly WeightedHueBand[]): number {
+  const totalWeight = bands.reduce((sum, band) => sum + band.weight, 0);
+  let cursor = randomInt(1, totalWeight);
+
+  for (const band of bands) {
+    cursor -= band.weight;
+    if (cursor <= 0) {
+      return randomInt(band.min, band.max);
+    }
+  }
+
+  const fallbackBand = bands[bands.length - 1];
+  return randomInt(fallbackBand.min, fallbackBand.max);
+}
+
 function rotateHue(hue: number, delta: number): number {
   const next = (hue + delta) % 360;
   return next < 0 ? next + 360 : next;
+}
+
+function isPinkHue(hue: number): boolean {
+  return hue >= 300 || hue <= 16;
+}
+
+function randomRelatedHue(baseHue: number, deltas: readonly number[]): number {
+  for (let attempt = 0; attempt < deltas.length * 3; attempt += 1) {
+    const delta = deltas[randomInt(0, deltas.length - 1)] * (Math.random() > 0.5 ? 1 : -1);
+    const candidate = rotateHue(baseHue, delta);
+    if (!isPinkHue(candidate)) {
+      return candidate;
+    }
+  }
+
+  for (const delta of deltas) {
+    const candidate = rotateHue(baseHue, delta);
+    if (!isPinkHue(candidate)) {
+      return candidate;
+    }
+  }
+
+  return 212;
 }
 
 function hslToRgb(hue: number, saturation: number, lightness: number) {
@@ -107,6 +177,93 @@ function contrastRatio(first: string, second: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function evaluateAccentForeground(primary: string, secondary: string) {
+  const lightScore = Math.min(
+    contrastRatio(ACCENT_FOREGROUND_LIGHT, primary),
+    contrastRatio(ACCENT_FOREGROUND_LIGHT, secondary),
+  );
+  const darkScore = Math.min(
+    contrastRatio(ACCENT_FOREGROUND_DARK, primary),
+    contrastRatio(ACCENT_FOREGROUND_DARK, secondary),
+  );
+
+  if (lightScore >= darkScore) {
+    return {
+      foreground: ACCENT_FOREGROUND_LIGHT,
+      score: lightScore,
+    };
+  }
+
+  return {
+    foreground: ACCENT_FOREGROUND_DARK,
+    score: darkScore,
+  };
+}
+
+function buildAccentPair(baseTheme: ResolvedTheme, accentHue: number, accentSecondaryHue: number) {
+  let bestPair:
+    | {
+        primary: string;
+        secondary: string;
+        foreground: string;
+        score: number;
+      }
+    | null = null;
+
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const primary =
+      baseTheme === "light"
+        ? hslToHex(accentHue, randomInt(60, 84), randomInt(34, 46))
+        : hslToHex(accentHue, randomInt(58, 82), randomInt(58, 72));
+
+    const secondary =
+      baseTheme === "light"
+        ? hslToHex(accentSecondaryHue, randomInt(56, 80), randomInt(34, 48))
+        : hslToHex(accentSecondaryHue, randomInt(54, 78), randomInt(56, 70));
+
+    const { foreground, score } = evaluateAccentForeground(primary, secondary);
+
+    if (!bestPair || score > bestPair.score) {
+      bestPair = {
+        primary,
+        secondary,
+        foreground,
+        score,
+      };
+    }
+
+    if (score >= CTA_MIN_CONTRAST) {
+      return {
+        primary,
+        secondary,
+        foreground,
+      };
+    }
+  }
+
+  if (bestPair && bestPair.score >= CTA_MIN_CONTRAST) {
+    return {
+      primary: bestPair.primary,
+      secondary: bestPair.secondary,
+      foreground: bestPair.foreground,
+    };
+  }
+
+  if (baseTheme === "light") {
+    return {
+      primary: "#1f52c3",
+      secondary: "#1a7cae",
+      foreground: ACCENT_FOREGROUND_LIGHT,
+    };
+  }
+
+  return {
+    primary: "#7ea9ff",
+    secondary: "#5be2ff",
+    foreground: ACCENT_FOREGROUND_DARK,
+  };
+}
+
 export function readStoredRandomTheme(): RandomThemePalette | null {
   if (typeof window === "undefined" || !window.localStorage) {
     return null;
@@ -144,10 +301,12 @@ export function readStoredRandomTheme(): RandomThemePalette | null {
 
 export function buildRandomTheme(): RandomThemePalette {
   const baseTheme: ResolvedTheme = Math.random() > 0.5 ? "light" : "dark";
-  const surfaceHue = randomInt(0, 359);
-  const accentHue = randomInt(0, 359);
-  const accentSecondaryHue = rotateHue(accentHue, randomInt(22, 68) * (Math.random() > 0.5 ? 1 : -1));
-  const usageHue = rotateHue(accentHue, randomInt(90, 145));
+  const surfaceHue = randomHueFromBands(PREMIUM_SURFACE_HUE_BANDS);
+  const accentHue = randomHueFromBands(PREMIUM_ACCENT_HUE_BANDS);
+  const accentSecondaryHue = randomRelatedHue(accentHue, COMPANION_DELTAS);
+  const usageHue = randomRelatedHue(accentHue, USAGE_DELTAS);
+  const accentHighlightHue = randomRelatedHue(accentHue, HIGHLIGHT_DELTAS);
+  const accentPair = buildAccentPair(baseTheme, accentHue, accentSecondaryHue);
 
   if (baseTheme === "light") {
     const bgSurface = hslToHex(surfaceHue, randomInt(24, 42), randomInt(97, 99));
@@ -172,11 +331,12 @@ export function buildRandomTheme(): RandomThemePalette {
         "--text-muted": textMuted,
         "--border-soft": hslToHex(surfaceHue, randomInt(18, 26), randomInt(80, 87)),
         "--border-strong": hslToHex(surfaceHue, randomInt(20, 32), randomInt(66, 74)),
-        "--accent-primary": hslToHex(accentHue, randomInt(68, 90), randomInt(40, 50)),
-        "--accent-secondary": hslToHex(accentSecondaryHue, randomInt(66, 92), randomInt(42, 56)),
+        "--accent-primary": accentPair.primary,
+        "--accent-secondary": accentPair.secondary,
+        "--accent-foreground": accentPair.foreground,
         "--accent-soft": hslToHex(accentHue, randomInt(52, 70), randomInt(86, 92)),
         "--accent-border": hslToHex(accentHue, randomInt(52, 72), randomInt(66, 76)),
-        "--accent-highlight": hslToHex(rotateHue(accentHue, 120), randomInt(56, 80), randomInt(48, 62)),
+        "--accent-highlight": hslToHex(accentHighlightHue, randomInt(56, 80), randomInt(48, 62)),
         "--usage-5h": hslToHex(rotateHue(accentHue, 8), randomInt(70, 88), randomInt(42, 54)),
         "--usage-5h-soft": hslToHex(rotateHue(accentHue, 8), randomInt(40, 62), randomInt(87, 94)),
         "--usage-7d": hslToHex(usageHue, randomInt(58, 84), randomInt(36, 50)),
@@ -213,11 +373,12 @@ export function buildRandomTheme(): RandomThemePalette {
       "--text-muted": textMuted,
       "--border-soft": hslToHex(surfaceHue, randomInt(22, 36), randomInt(26, 36)),
       "--border-strong": hslToHex(surfaceHue, randomInt(24, 40), randomInt(40, 52)),
-      "--accent-primary": hslToHex(accentHue, randomInt(68, 90), randomInt(66, 78)),
-      "--accent-secondary": hslToHex(accentSecondaryHue, randomInt(70, 94), randomInt(64, 80)),
+      "--accent-primary": accentPair.primary,
+      "--accent-secondary": accentPair.secondary,
+      "--accent-foreground": accentPair.foreground,
       "--accent-soft": hslToHex(accentHue, randomInt(40, 62), randomInt(20, 34)),
       "--accent-border": hslToHex(accentHue, randomInt(40, 62), randomInt(46, 60)),
-      "--accent-highlight": hslToHex(rotateHue(accentHue, 120), randomInt(56, 80), randomInt(64, 76)),
+      "--accent-highlight": hslToHex(accentHighlightHue, randomInt(56, 80), randomInt(64, 76)),
       "--usage-5h": hslToHex(rotateHue(accentHue, 8), randomInt(72, 90), randomInt(68, 80)),
       "--usage-5h-soft": hslToHex(rotateHue(accentHue, 8), randomInt(40, 64), randomInt(22, 34)),
       "--usage-7d": hslToHex(usageHue, randomInt(56, 84), randomInt(62, 76)),

@@ -19,11 +19,11 @@ Do not move command/business logic into presentational components.
 ## Usage-First Workbench Contract
 
 - Workbench layout is usage-first: header, account workspace, current session card, and recent activity.
-- Header Control Rail uses a stable 3x2 interaction surface: Refresh Usage, Add Account, Full/Compact toggle, then Light/Dark/Random theme controls.
+- Header Control Rail uses a stable 3x2 interaction surface: Refresh Usage, Add Account, Full/Compact toggle, then Light/Dark/Random theme controls, followed by compact status tiles for Accounts Tracked and Blocking PIDs.
 - `CurrentCodexSessionCard` is the only UI entry point for auth.json session refresh/snapshot actions.
 - Account cards are uniform; no active-account special layout and no switch CTA surface.
 - Account cards support drag-handle reordering when multiple accounts exist; order is persisted in local account storage.
-- Account cards support persistent display density modes: `full` (management controls visible) and `compact` (name, drag handle, usage telemetry, refresh only).
+- Account cards support persistent display density modes: `full` (management controls visible) and `compact` (name, inline refresh icon, drag handle, usage telemetry).
 - Inspector/shortcuts/search/quick-switch surfaces are intentionally removed from the primary UI.
 - Generic Add Account import defaults to the Codex auth directory (`~/.codex`) when current session metadata is available.
 - Current Session `Import Snapshot` refreshes session metadata first, then defaults file picker to snapshots directory.

@@ -201,6 +201,8 @@ it("renders control rail as three top actions and three theme options", async ()
   expect(scoped.getByRole("radio", { name: /light/i })).toBeInTheDocument();
   expect(scoped.getByRole("radio", { name: /dark/i })).toBeInTheDocument();
   expect(scoped.getByRole("radio", { name: /random/i })).toBeInTheDocument();
+  expect(scoped.getByText(/accounts tracked/i)).toBeInTheDocument();
+  expect(scoped.getByText(/blocking pids/i)).toBeInTheDocument();
 });
 
 it("toggles compact/full button label when density mode changes", async () => {
@@ -231,7 +233,8 @@ it("switches to compact mode and hides card management controls", async () => {
 
   expect(screen.queryByRole("button", { name: /reconnect/i })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /remove account/i })).not.toBeInTheDocument();
-  expect(screen.getAllByRole("button", { name: /refresh usage/i })).toHaveLength(2);
+  expect(screen.getByRole("button", { name: /refresh work usage/i })).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: /refresh usage/i })).toHaveLength(1);
 });
 
 it("keeps reorder handles available in compact mode for multiple accounts", async () => {

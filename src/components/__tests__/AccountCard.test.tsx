@@ -117,7 +117,7 @@ it("hides reconnect action for api key accounts", () => {
   expect(screen.queryByRole("button", { name: /reconnect/i })).not.toBeInTheDocument();
 });
 
-it("renders compact mode with only name, drag handle, usage, and refresh", () => {
+it("renders compact mode with inline refresh icon and no footer refresh button", () => {
   render(
     <AccountCard
       account={{
@@ -155,7 +155,8 @@ it("renders compact mode with only name, drag handle, usage, and refresh", () =>
 
   expect(screen.getByText("Compact Account")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /reorder compact account/i })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /refresh usage/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /refresh compact account usage/i })).toBeInTheDocument();
+  expect(screen.queryByText(/refresh usage/i)).not.toBeInTheDocument();
 
   expect(screen.queryByRole("button", { name: /rename account/i })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /reconnect/i })).not.toBeInTheDocument();

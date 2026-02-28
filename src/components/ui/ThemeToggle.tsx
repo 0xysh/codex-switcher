@@ -55,7 +55,7 @@ export function ThemeToggle({ value, onChange, className }: ThemeToggleProps) {
             onClick={() => onChange(option.value)}
             className={`inline-flex h-11 w-full cursor-pointer touch-manipulation items-center justify-center gap-1.5 rounded-xl px-2 text-[11px] font-semibold transition-[background-color,color,border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent-secondary)] sm:min-w-[88px] sm:text-xs ${
               active
-                ? "border border-[var(--accent-border)] bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-[0_10px_20px_rgb(20_80_182_/_.3)]"
+                ? "border border-[var(--accent-border)] bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-[var(--accent-foreground)] shadow-[0_10px_20px_rgb(20_80_182_/_.3)]"
                 : "border border-transparent text-[var(--text-muted)] hover:border-[var(--border-soft)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
             }`}
           >

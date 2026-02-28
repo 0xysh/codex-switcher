@@ -16,7 +16,8 @@
   --border-strong: #9eb3d1;
 
   --accent-primary: #1f52c3;
-  --accent-secondary: #0f9ecf;
+  --accent-secondary: #1a7cae;
+  --accent-foreground: #ffffff;
   --accent-soft: #dce9ff;
   --accent-border: #8eb4f0;
   --accent-highlight: #d4a14f;
@@ -73,6 +74,7 @@
 
   --accent-primary: #7ea9ff;
   --accent-secondary: #5be2ff;
+  --accent-foreground: #111d30;
   --accent-soft: #163053;
   --accent-border: #5f86be;
   --accent-highlight: #f2c46f;

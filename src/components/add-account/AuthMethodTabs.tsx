@@ -31,7 +31,7 @@ export function AuthMethodTabs({ activeTab, onTabChange }: AuthMethodTabsProps) 
         tabIndex={activeTab === "oauth" ? 0 : -1}
         className={`cursor-pointer rounded-xl border px-3 py-2 text-sm font-semibold transition-[background-color,color,border-color,box-shadow] ${
           activeTab === "oauth"
-            ? "border-[var(--accent-border)] bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-[0_10px_20px_rgb(20_80_182_/_.3)]"
+            ? "border-[var(--accent-border)] bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-[var(--accent-foreground)] shadow-[0_10px_20px_rgb(20_80_182_/_.3)]"
             : "border-transparent text-secondary hover:border-[var(--border-soft)] hover:bg-[var(--bg-surface-elevated)]"
         }`}
         onClick={() => onTabChange("oauth")}
@@ -51,7 +51,7 @@ export function AuthMethodTabs({ activeTab, onTabChange }: AuthMethodTabsProps) 
         tabIndex={activeTab === "import" ? 0 : -1}
         className={`cursor-pointer rounded-xl border px-3 py-2 text-sm font-semibold transition-[background-color,color,border-color,box-shadow] ${
           activeTab === "import"
-            ? "border-[var(--accent-border)] bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-[0_10px_20px_rgb(20_80_182_/_.3)]"
+            ? "border-[var(--accent-border)] bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-[var(--accent-foreground)] shadow-[0_10px_20px_rgb(20_80_182_/_.3)]"
             : "border-transparent text-secondary hover:border-[var(--border-soft)] hover:bg-[var(--bg-surface-elevated)]"
         }`}
         onClick={() => onTabChange("import")}
