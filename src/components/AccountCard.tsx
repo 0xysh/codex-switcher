@@ -25,6 +25,7 @@ interface AccountCardProps {
   onRename: (newName: string) => Promise<void>;
   dragHandleProps?: ButtonHTMLAttributes<HTMLButtonElement>;
   isDragging?: boolean;
+  displayMode?: "full" | "compact";
 }
 
 function formatLastRefresh(date: Date | null): string {
@@ -71,6 +72,7 @@ export function AccountCard({
   onRename,
   dragHandleProps,
   isDragging = false,
+  displayMode = "full",
 }: AccountCardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -156,10 +158,11 @@ export function AccountCard({
     : account.auth_mode === "api_key" ? "API Key" : "Unknown";
 
   const authModeDisplay = account.auth_mode === "api_key" ? "Imported" : "OAuth";
-  const usageStatus = getUsageStatus(account);
-  const UsageStatusIcon = usageStatus.icon;
+  const usageStatus = displayMode === "full" ? getUsageStatus(account) : null;
+  const UsageStatusIcon = usageStatus?.icon;
   const creditsBalance = account.usage?.credits_balance;
   const canReconnect = account.auth_mode === "chat_gpt" && !!onReconnect;
+  const isCompact = displayMode === "compact";
 
   return (
     <article
@@ -175,54 +178,62 @@ export function AccountCard({
       <header className="relative z-10 mb-4 space-y-3">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            {isEditing ? (
-              <input
-                ref={inputRef}
-                type="text"
-                name="accountRename"
-                aria-label="Account name"
-                autoComplete="off"
-                disabled={isRenaming}
-                value={editName}
-                onChange={(event) => setEditName(event.target.value)}
-                onBlur={() => {
-                  void commitRename();
-                }}
-                onKeyDown={handleKeyDown}
-                className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3 py-2 text-[1.02rem] font-semibold text-[var(--text-primary)] shadow-[var(--shadow-soft)]"
-              />
-            ) : (
-              <button
-                type="button"
-                aria-label="Rename Account"
-                onClick={() => setIsEditing(true)}
-                disabled={isRenaming}
-                className="w-full cursor-pointer truncate text-left text-[1.12rem] font-semibold text-[var(--text-primary)] transition-colors hover:text-[var(--accent-primary)] disabled:cursor-default disabled:hover:text-[var(--text-primary)]"
-              >
+            {isCompact ? (
+              <p className="truncate pt-1 text-[1.08rem] font-semibold text-[var(--text-primary)]">
                 {account.name}
-              </button>
+              </p>
+            ) : (
+              <>
+                {isEditing ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    name="accountRename"
+                    aria-label="Account name"
+                    autoComplete="off"
+                    disabled={isRenaming}
+                    value={editName}
+                    onChange={(event) => setEditName(event.target.value)}
+                    onBlur={() => {
+                      void commitRename();
+                    }}
+                    onKeyDown={handleKeyDown}
+                    className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-3 py-2 text-[1.02rem] font-semibold text-[var(--text-primary)] shadow-[var(--shadow-soft)]"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    aria-label="Rename Account"
+                    onClick={() => setIsEditing(true)}
+                    disabled={isRenaming}
+                    className="w-full cursor-pointer truncate text-left text-[1.12rem] font-semibold text-[var(--text-primary)] transition-colors hover:text-[var(--accent-primary)] disabled:cursor-default disabled:hover:text-[var(--text-primary)]"
+                  >
+                    {account.name}
+                  </button>
+                )}
+
+                <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 text-sm text-secondary shadow-[var(--shadow-soft)]">
+                  <div className="flex min-w-0 items-center gap-2">
+                    {account.auth_mode === "api_key" ? (
+                      <IconKey className="h-4 w-4" />
+                    ) : (
+                      <IconShieldCheck className="h-4 w-4" />
+                    )}
+                    {account.email ? (
+                      <span className="truncate">{account.email}</span>
+                    ) : (
+                      <span className="text-muted">No email available</span>
+                    )}
+                  </div>
+
+                  {creditsBalance ? (
+                    <p className="mono-data shrink-0 rounded-full border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] px-2 py-1 text-[11px] text-secondary">
+                      Credits: {creditsBalance}
+                    </p>
+                  ) : null}
+                </div>
+              </>
             )}
-
-            <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 text-sm text-secondary shadow-[var(--shadow-soft)]">
-              <div className="flex min-w-0 items-center gap-2">
-                {account.auth_mode === "api_key" ? (
-                  <IconKey className="h-4 w-4" />
-                ) : (
-                  <IconShieldCheck className="h-4 w-4" />
-                )}
-                {account.email ? (
-                  <span className="truncate">{account.email}</span>
-                ) : (
-                  <span className="text-muted">No email available</span>
-                )}
-              </div>
-
-              {creditsBalance ? (
-                <p className="mono-data shrink-0 rounded-full border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] px-2 py-1 text-[11px] text-secondary">
-                  Credits: {creditsBalance}
-                </p>
-              ) : null}
-            </div>
           </div>
 
           {dragHandleProps ? (
@@ -238,27 +249,31 @@ export function AccountCard({
           ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2.5 shadow-[var(--shadow-soft)]">
-          <span className={usageStatus.className}>
-            <UsageStatusIcon className="h-3.5 w-3.5" />
-            {usageStatus.label}
-          </span>
+        {!isCompact ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2.5 shadow-[var(--shadow-soft)]">
+            {usageStatus && UsageStatusIcon ? (
+              <span className={usageStatus.className}>
+                <UsageStatusIcon className="h-3.5 w-3.5" />
+                {usageStatus.label}
+              </span>
+            ) : null}
 
-          <span className="chip">
-            <IconActivity className="h-3.5 w-3.5" />
-            {planDisplay}
-          </span>
+            <span className="chip">
+              <IconActivity className="h-3.5 w-3.5" />
+              {planDisplay}
+            </span>
 
-          <span className="chip">
-            <IconShieldCheck className="h-3.5 w-3.5" />
-            {authModeDisplay}
-          </span>
+            <span className="chip">
+              <IconShieldCheck className="h-3.5 w-3.5" />
+              {authModeDisplay}
+            </span>
 
-          <span className="chip ml-auto min-w-max" title={lastRefresh ? lastRefresh.toLocaleString() : "No usage refresh yet"}>
-            <IconClock className="h-3.5 w-3.5" />
-            Updated {formatLastRefresh(lastRefresh)}
-          </span>
-        </div>
+            <span className="chip ml-auto min-w-max" title={lastRefresh ? lastRefresh.toLocaleString() : "No usage refresh yet"}>
+              <IconClock className="h-3.5 w-3.5" />
+              Updated {formatLastRefresh(lastRefresh)}
+            </span>
+          </div>
+        ) : null}
       </header>
 
       <div className="mb-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface-elevated)] p-3.5 shadow-[var(--shadow-soft)]">
@@ -269,7 +284,7 @@ export function AccountCard({
         <Button
           variant="secondary"
           size="md"
-          className="flex-1"
+          className={isCompact ? "w-full" : "flex-1"}
           onClick={() => {
             void handleRefresh();
           }}
@@ -279,7 +294,7 @@ export function AccountCard({
           {isRefreshing ? "Refreshing…" : "Refresh Usage"}
         </Button>
 
-        {canReconnect ? (
+        {!isCompact && canReconnect ? (
           <Button
             variant="secondary"
             size="md"
@@ -294,9 +309,11 @@ export function AccountCard({
           </Button>
         ) : null}
 
-        <IconButton aria-label="Remove Account" onClick={onDelete} tone="danger">
-          <IconTrash className="h-4 w-4" />
-        </IconButton>
+        {!isCompact ? (
+          <IconButton aria-label="Remove Account" onClick={onDelete} tone="danger">
+            <IconTrash className="h-4 w-4" />
+          </IconButton>
+        ) : null}
       </footer>
     </article>
   );

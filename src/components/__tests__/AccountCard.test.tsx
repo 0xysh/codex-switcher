@@ -116,3 +116,52 @@ it("hides reconnect action for api key accounts", () => {
 
   expect(screen.queryByRole("button", { name: /reconnect/i })).not.toBeInTheDocument();
 });
+
+it("renders compact mode with only name, drag handle, usage, and refresh", () => {
+  render(
+    <AccountCard
+      account={{
+        id: "acc-compact",
+        name: "Compact Account",
+        email: "compact@example.com",
+        plan_type: "plus",
+        auth_mode: "chat_gpt",
+        is_active: false,
+        created_at: new Date().toISOString(),
+        last_used_at: null,
+        usage: {
+          account_id: "acc-compact",
+          plan_type: "plus",
+          primary_used_percent: 42,
+          primary_window_minutes: 300,
+          primary_resets_at: Math.floor(Date.now() / 1000) + 3600,
+          secondary_used_percent: null,
+          secondary_window_minutes: null,
+          secondary_resets_at: null,
+          has_credits: true,
+          unlimited_credits: false,
+          credits_balance: "11.00",
+          error: null,
+        },
+      }}
+      displayMode="compact"
+      onDelete={() => {}}
+      onRefresh={async () => {}}
+      onReconnect={async () => {}}
+      onRename={async () => {}}
+      dragHandleProps={{ "aria-label": "Reorder Compact Account" }}
+    />,
+  );
+
+  expect(screen.getByText("Compact Account")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /reorder compact account/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /refresh usage/i })).toBeInTheDocument();
+
+  expect(screen.queryByRole("button", { name: /rename account/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /reconnect/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /remove account/i })).not.toBeInTheDocument();
+  expect(screen.queryByText(/compact@example.com/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/updated/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/credits:/i)).not.toBeInTheDocument();
+  expect(screen.getByText(/5h limit/i)).toBeInTheDocument();
+});
