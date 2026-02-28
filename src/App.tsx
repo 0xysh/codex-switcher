@@ -246,6 +246,7 @@ function App() {
               accounts={accounts}
               loading={loading}
               error={error}
+              cardDensityMode={cardDensityMode}
               onOpenAddAccount={openAddAccountModal}
               onDelete={(accountId) => {
                 void handleDelete(accountId);

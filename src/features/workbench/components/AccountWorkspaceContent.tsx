@@ -28,6 +28,7 @@ interface AccountWorkspaceContentProps {
   accounts: AccountWithUsage[];
   loading: boolean;
   error: string | null;
+  cardDensityMode: "full" | "compact";
   onOpenAddAccount: () => void;
   onDelete: (accountId: string) => void;
   onRefreshSingleUsage: (accountId: string) => Promise<void>;
@@ -39,6 +40,7 @@ interface AccountWorkspaceContentProps {
 interface SortableAccountCardProps {
   account: AccountWithUsage;
   canSort: boolean;
+  cardDensityMode: "full" | "compact";
   onDelete: (accountId: string) => void;
   onRefreshSingleUsage: (accountId: string) => Promise<void>;
   onReconnectAccount: (accountId: string) => Promise<void>;
@@ -48,6 +50,7 @@ interface SortableAccountCardProps {
 function SortableAccountCard({
   account,
   canSort,
+  cardDensityMode,
   onDelete,
   onRefreshSingleUsage,
   onReconnectAccount,
@@ -81,6 +84,7 @@ function SortableAccountCard({
         onRename={(newName: string) => onRename(account.id, newName)}
         dragHandleProps={dragHandleProps}
         isDragging={isDragging}
+        displayMode={cardDensityMode}
       />
     </div>
   );
@@ -90,6 +94,7 @@ export function AccountWorkspaceContent({
   accounts,
   loading,
   error,
+  cardDensityMode,
   onOpenAddAccount,
   onDelete,
   onRefreshSingleUsage,
@@ -241,6 +246,7 @@ export function AccountWorkspaceContent({
                 key={account.id}
                 account={account}
                 canSort={canSort}
+                cardDensityMode={cardDensityMode}
                 onDelete={onDelete}
                 onRefreshSingleUsage={onRefreshSingleUsage}
                 onReconnectAccount={onReconnectAccount}

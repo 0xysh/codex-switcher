@@ -9,6 +9,28 @@ import { invokeMock } from "./test/mocks/tauri";
 
 const useAccountsMock = vi.fn();
 
+const WORK_ACCOUNT = {
+  id: "acc-work",
+  name: "Work",
+  email: "work@example.com",
+  plan_type: "plus" as const,
+  auth_mode: "chat_gpt" as const,
+  is_active: true,
+  created_at: new Date().toISOString(),
+  last_used_at: null,
+};
+
+const PERSONAL_ACCOUNT = {
+  id: "acc-personal",
+  name: "Personal",
+  email: "personal@example.com",
+  plan_type: "plus" as const,
+  auth_mode: "chat_gpt" as const,
+  is_active: false,
+  created_at: new Date().toISOString(),
+  last_used_at: null,
+};
+
 vi.mock("./hooks/useAccounts", () => ({
   useAccounts: () => useAccountsMock(),
 }));
@@ -189,6 +211,47 @@ it("toggles compact/full button label when density mode changes", async () => {
   await user.click(compactButton);
 
   expect(await screen.findByRole("button", { name: /full view/i })).toBeInTheDocument();
+});
+
+it("switches to compact mode and hides card management controls", async () => {
+  useAccountsMock.mockReturnValue(
+    createUseAccountsMock({
+      accounts: [WORK_ACCOUNT],
+    })
+  );
+
+  const user = userEvent.setup();
+  render(<App />);
+
+  expect(await screen.findByRole("button", { name: /reconnect/i })).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: /remove account/i })).toBeInTheDocument();
+
+  await user.click(await screen.findByRole("button", { name: /compact view/i }));
+  expect(await screen.findByRole("button", { name: /full view/i })).toBeInTheDocument();
+
+  expect(screen.queryByRole("button", { name: /reconnect/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /remove account/i })).not.toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: /refresh usage/i })).toHaveLength(2);
+});
+
+it("keeps reorder handles available in compact mode for multiple accounts", async () => {
+  useAccountsMock.mockReturnValue(
+    createUseAccountsMock({
+      accounts: [WORK_ACCOUNT, PERSONAL_ACCOUNT],
+    })
+  );
+
+  const user = userEvent.setup();
+  render(<App />);
+
+  expect(await screen.findByRole("button", { name: /reorder work/i })).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: /reorder personal/i })).toBeInTheDocument();
+
+  await user.click(await screen.findByRole("button", { name: /compact view/i }));
+  expect(await screen.findByRole("button", { name: /full view/i })).toBeInTheDocument();
+
+  expect(screen.getByRole("button", { name: /reorder work/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /reorder personal/i })).toBeInTheDocument();
 });
 
 it("keeps recent activity and blocking pid status visible", async () => {
