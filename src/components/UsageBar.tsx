@@ -15,7 +15,17 @@ function formatResetTime(resetAt: number | null | undefined): string {
   if (diff <= 0) return "now";
   if (diff < 60) return `${diff}s`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m`;
+
+  const hours = Math.floor(diff / 3600);
+  const minutes = Math.floor((diff % 3600) / 60);
+
+  if (hours < 24) {
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+
+  const days = Math.floor(hours / 24);
+  const dayHours = hours % 24;
+  return dayHours > 0 ? `${days}d ${dayHours}h` : `${days}d`;
 }
 
 function formatWindowDuration(minutes: number | null | undefined): string {

@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 
 import { UsageBar } from "../UsageBar";
 
@@ -47,4 +47,34 @@ it("does not render credits balance in usage section", () => {
   );
 
   expect(screen.queryByText(/credits:/i)).not.toBeInTheDocument();
+});
+
+it("formats long reset windows with day-hour shorthand", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+
+  try {
+    render(
+      <UsageBar
+        usage={{
+          account_id: "acc-3",
+          plan_type: "plus",
+          primary_used_percent: null,
+          primary_window_minutes: null,
+          primary_resets_at: null,
+          secondary_used_percent: 36,
+          secondary_window_minutes: 10080,
+          secondary_resets_at: Math.floor(Date.now() / 1000) + 51 * 3600 + 22 * 60,
+          has_credits: null,
+          unlimited_credits: null,
+          credits_balance: null,
+          error: null,
+        }}
+      />
+    );
+
+    expect(screen.getByText(/resets in 2d 3h/i)).toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
 });

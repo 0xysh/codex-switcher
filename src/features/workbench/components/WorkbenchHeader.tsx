@@ -19,11 +19,9 @@ interface WorkbenchHeaderProps {
   onThemeChange: (value: ThemePreference) => void;
 }
 
-function getProcessSummary(processInfo: CodexProcessInfo | null) {
+function getBlockingSummary(processInfo: CodexProcessInfo | null) {
   if (!processInfo) {
     return {
-      processLabel: "Processes checking",
-      processClass: "text-secondary",
       blockingValue: "checking",
       blockingClass: "text-secondary",
     };
@@ -31,8 +29,6 @@ function getProcessSummary(processInfo: CodexProcessInfo | null) {
 
   if (processInfo.count === 0) {
     return {
-      processLabel: "Processes clear",
-      processClass: "text-[var(--success)]",
       blockingValue: "none",
       blockingClass: "text-secondary",
     };
@@ -40,25 +36,14 @@ function getProcessSummary(processInfo: CodexProcessInfo | null) {
 
   const pids = processInfo.pids.slice(0, 4);
   const suffix = processInfo.pids.length > pids.length ? "…" : "";
-  const processNoun = processInfo.count === 1 ? "process" : "processes";
 
   return {
-    processLabel: `${processInfo.count} ${processNoun} running`,
-    processClass: "text-[var(--warning)]",
     blockingValue: `${pids.join(", ")}${suffix}`,
     blockingClass: "text-[var(--warning)]",
   };
 }
 
 function formatAccountCount(count: number) {
-  return `${count} ${count === 1 ? "account" : "accounts"}`;
-}
-
-function formatAttentionCount(count: number) {
-  if (count === 0) {
-    return "none";
-  }
-
   return `${count} ${count === 1 ? "account" : "accounts"}`;
 }
 
@@ -71,7 +56,7 @@ export function WorkbenchHeader({
   onOpenAddAccount,
   onThemeChange,
 }: WorkbenchHeaderProps) {
-  const processSummary = getProcessSummary(processInfo);
+  const blockingSummary = getBlockingSummary(processInfo);
 
   return (
     <header className="px-4 pb-5 pt-4 sm:px-6">
@@ -134,28 +119,16 @@ export function WorkbenchHeader({
           </aside>
         </div>
 
-        <dl className="relative mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
+        <dl className="relative mt-4 grid grid-cols-2 gap-2">
           <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
             <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Accounts Tracked</dt>
             <dd className="mt-1 text-base font-semibold text-[var(--text-primary)]">{formatAccountCount(summary.total)}</dd>
           </div>
 
           <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
-            <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Needs Attention</dt>
-            <dd className={`mt-1 text-base font-semibold ${summary.attention > 0 ? "text-[var(--warning)]" : "text-[var(--success)]"}`}>
-              {formatAttentionCount(summary.attention)}
-            </dd>
-          </div>
-
-          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
-            <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Process Status</dt>
-            <dd className={`mt-1 text-sm font-semibold leading-tight ${processSummary.processClass}`}>{processSummary.processLabel}</dd>
-          </div>
-
-          <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">
             <dt className="mono-data text-[10px] uppercase tracking-[0.15em] text-muted">Blocking PIDs</dt>
-            <dd className={`mono-data mt-1 truncate text-sm font-semibold ${processSummary.blockingClass}`} title={processSummary.blockingValue}>
-              {processSummary.blockingValue}
+            <dd className={`mono-data mt-1 truncate text-sm font-semibold ${blockingSummary.blockingClass}`} title={blockingSummary.blockingValue}>
+              {blockingSummary.blockingValue}
             </dd>
           </div>
         </dl>
