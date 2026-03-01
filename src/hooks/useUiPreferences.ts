@@ -5,6 +5,8 @@ export type CardDensityMode = "full" | "compact";
 interface UiPreferences {
   maskedAccountIds: string[];
   cardDensityMode: CardDensityMode;
+  isWorkbenchHeaderCollapsed: boolean;
+  isCurrentSessionCollapsed: boolean;
 }
 
 const STORAGE_KEY = "codex-switcher:ui";
@@ -21,14 +23,25 @@ function normalizeCardDensityMode(value: unknown): CardDensityMode {
   return value === "compact" ? "compact" : "full";
 }
 
+function normalizeCollapsedState(value: unknown): boolean {
+  return value === true;
+}
+
+const DEFAULT_PREFERENCES: UiPreferences = {
+  maskedAccountIds: [],
+  cardDensityMode: "full",
+  isWorkbenchHeaderCollapsed: false,
+  isCurrentSessionCollapsed: false,
+};
+
 function loadPreferences(): UiPreferences {
   if (typeof window === "undefined" || !window.localStorage) {
-    return { maskedAccountIds: [], cardDensityMode: "full" };
+    return DEFAULT_PREFERENCES;
   }
 
   const raw = window.localStorage.getItem(STORAGE_KEY);
   if (!raw) {
-    return { maskedAccountIds: [], cardDensityMode: "full" };
+    return DEFAULT_PREFERENCES;
   }
 
   try {
@@ -36,9 +49,11 @@ function loadPreferences(): UiPreferences {
     return {
       maskedAccountIds: normalizeMaskedIds(parsed.maskedAccountIds),
       cardDensityMode: normalizeCardDensityMode(parsed.cardDensityMode),
+      isWorkbenchHeaderCollapsed: normalizeCollapsedState(parsed.isWorkbenchHeaderCollapsed),
+      isCurrentSessionCollapsed: normalizeCollapsedState(parsed.isCurrentSessionCollapsed),
     };
   } catch {
-    return { maskedAccountIds: [], cardDensityMode: "full" };
+    return DEFAULT_PREFERENCES;
   }
 }
 
@@ -80,6 +95,14 @@ export function useUiPreferences() {
     updatePreferences((prev) => ({ ...prev, cardDensityMode: normalizedMode }));
   }, [updatePreferences]);
 
+  const setWorkbenchHeaderCollapsed = useCallback((isCollapsed: boolean) => {
+    updatePreferences((prev) => ({ ...prev, isWorkbenchHeaderCollapsed: isCollapsed }));
+  }, [updatePreferences]);
+
+  const setCurrentSessionCollapsed = useCallback((isCollapsed: boolean) => {
+    updatePreferences((prev) => ({ ...prev, isCurrentSessionCollapsed: isCollapsed }));
+  }, [updatePreferences]);
+
   const maskedAccountIdSet = useMemo(() => {
     return new Set(preferences.maskedAccountIds);
   }, [preferences.maskedAccountIds]);
@@ -91,6 +114,10 @@ export function useUiPreferences() {
     toggleMaskedAccountId,
     cardDensityMode: preferences.cardDensityMode,
     setCardDensityMode,
+    isWorkbenchHeaderCollapsed: preferences.isWorkbenchHeaderCollapsed,
+    setWorkbenchHeaderCollapsed,
+    isCurrentSessionCollapsed: preferences.isCurrentSessionCollapsed,
+    setCurrentSessionCollapsed,
   };
 }
 

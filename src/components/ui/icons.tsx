@@ -245,6 +245,14 @@ export function IconPanelRight(props: IconProps) {
   );
 }
 
+export function IconChevronDown(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M6 9l6 6 6-6" />
+    </BaseIcon>
+  );
+}
+
 export function IconGripVertical(props: IconProps) {
   return (
     <BaseIcon {...props}>

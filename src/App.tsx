@@ -55,7 +55,7 @@ function App() {
   } = useAccounts();
 
   const { themePreference, setThemePreference } = useTheme();
-  const { cardDensityMode, setCardDensityMode } = useUiPreferences();
+  const { cardDensityMode, setCardDensityMode, isWorkbenchHeaderCollapsed, setWorkbenchHeaderCollapsed, isCurrentSessionCollapsed, setCurrentSessionCollapsed } = useUiPreferences();
   const { processInfo } = useProcessMonitor();
   const { activity, pushActivity } = useActivityFeed();
 
@@ -232,13 +232,11 @@ function App() {
         processInfo={processInfo}
         cardDensityMode={cardDensityMode}
         themePreference={themePreference}
-        onRefreshUsage={() => {
-          void handleRefresh();
-        }}
+        isCollapsed={isWorkbenchHeaderCollapsed}
+        onRefreshUsage={() => void handleRefresh()}
         onOpenAddAccount={openAddAccountModal}
-        onOpenThemePalette={() => {
-          setIsThemePaletteModalOpen(true);
-        }}
+        onOpenThemePalette={() => setIsThemePaletteModalOpen(true)}
+        onToggleCollapsed={() => setWorkbenchHeaderCollapsed(!isWorkbenchHeaderCollapsed)}
         onToggleCardDensityMode={toggleCardDensityMode}
         onThemeChange={setThemePreference}
       />
@@ -263,11 +261,11 @@ function App() {
 
             <CurrentCodexSessionCard
               summary={currentSession}
+              isCollapsed={isCurrentSessionCollapsed}
               onRefresh={refreshCurrentSession}
               onSaveSnapshot={handleSaveSnapshot}
-              onImportSnapshot={() => {
-                void openImportSnapshotModal();
-              }}
+              onImportSnapshot={() => void openImportSnapshotModal()}
+              onToggleCollapsed={() => setCurrentSessionCollapsed(!isCurrentSessionCollapsed)}
             />
           </section>
 
@@ -305,9 +303,7 @@ function App() {
 
       <ThemePaletteModal
         isOpen={isThemePaletteModalOpen}
-        onClose={() => {
-          setIsThemePaletteModalOpen(false);
-        }}
+        onClose={() => setIsThemePaletteModalOpen(false)}
       />
 
       <LiveRegion label="Global Announcements" message={announcement} />

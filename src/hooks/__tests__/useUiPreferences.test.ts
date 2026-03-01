@@ -28,6 +28,8 @@ it("defaults card density to full and persists compact mode", () => {
   const { result } = renderHook(() => useUiPreferences());
 
   expect(result.current.cardDensityMode).toBe("full");
+  expect(result.current.isWorkbenchHeaderCollapsed).toBe(false);
+  expect(result.current.isCurrentSessionCollapsed).toBe(false);
 
   act(() => {
     result.current.setCardDensityMode("compact");
@@ -48,6 +50,24 @@ it("preserves masked ids from legacy storage payloads without card density", () 
 
   expect(result.current.maskedAccountIds).toEqual(["acc-legacy"]);
   expect(result.current.cardDensityMode).toBe("full");
+  expect(result.current.isWorkbenchHeaderCollapsed).toBe(false);
+  expect(result.current.isCurrentSessionCollapsed).toBe(false);
+});
+
+it("persists header and current session collapse preferences", () => {
+  const { result } = renderHook(() => useUiPreferences());
+
+  act(() => {
+    result.current.setWorkbenchHeaderCollapsed(true);
+    result.current.setCurrentSessionCollapsed(true);
+  });
+
+  expect(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY)).toContain(
+    '"isWorkbenchHeaderCollapsed":true'
+  );
+  expect(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY)).toContain(
+    '"isCurrentSessionCollapsed":true'
+  );
 });
 
 it("keeps masked ids when toggling card density mode", () => {

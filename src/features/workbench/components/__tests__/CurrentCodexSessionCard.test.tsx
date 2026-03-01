@@ -9,6 +9,18 @@ const onRefresh = vi.fn(async () => undefined);
 const onSaveSnapshot = vi.fn(async () => "/tmp/auth-snapshot.json");
 const onImportSnapshot = vi.fn();
 
+function createCardProps(summary: CurrentAuthSummary, overrides?: Partial<Parameters<typeof CurrentCodexSessionCard>[0]>) {
+  return {
+    summary,
+    onRefresh,
+    onSaveSnapshot,
+    onImportSnapshot,
+    isCollapsed: false,
+    onToggleCollapsed: vi.fn(),
+    ...overrides,
+  };
+}
+
 function createSummary(status: CurrentAuthSummary["status"]): CurrentAuthSummary {
   return {
     status,
@@ -24,57 +36,30 @@ function createSummary(status: CurrentAuthSummary["status"]): CurrentAuthSummary
 
 it("renders status variants for ready, missing, invalid, and error", () => {
   const { rerender } = render(
-    <CurrentCodexSessionCard
-      summary={createSummary("ready")}
-      onRefresh={onRefresh}
-      onSaveSnapshot={onSaveSnapshot}
-      onImportSnapshot={onImportSnapshot}
-    />,
+    <CurrentCodexSessionCard {...createCardProps(createSummary("ready"))} />,
   );
 
   expect(screen.getByText(/status: ready/i)).toBeInTheDocument();
 
   rerender(
-    <CurrentCodexSessionCard
-      summary={createSummary("missing")}
-      onRefresh={onRefresh}
-      onSaveSnapshot={onSaveSnapshot}
-      onImportSnapshot={onImportSnapshot}
-    />,
+    <CurrentCodexSessionCard {...createCardProps(createSummary("missing"))} />,
   );
   expect(screen.getByText(/status: missing/i)).toBeInTheDocument();
 
   rerender(
-    <CurrentCodexSessionCard
-      summary={createSummary("invalid")}
-      onRefresh={onRefresh}
-      onSaveSnapshot={onSaveSnapshot}
-      onImportSnapshot={onImportSnapshot}
-    />,
+    <CurrentCodexSessionCard {...createCardProps(createSummary("invalid"))} />,
   );
   expect(screen.getByText(/status: invalid/i)).toBeInTheDocument();
 
   rerender(
-    <CurrentCodexSessionCard
-      summary={createSummary("error")}
-      onRefresh={onRefresh}
-      onSaveSnapshot={onSaveSnapshot}
-      onImportSnapshot={onImportSnapshot}
-    />,
+    <CurrentCodexSessionCard {...createCardProps(createSummary("error"))} />,
   );
   expect(screen.getByText(/status: error/i)).toBeInTheDocument();
 });
 
 it("wires refresh, save snapshot, and import snapshot actions", async () => {
   const user = userEvent.setup();
-  render(
-    <CurrentCodexSessionCard
-      summary={createSummary("ready")}
-      onRefresh={onRefresh}
-      onSaveSnapshot={onSaveSnapshot}
-      onImportSnapshot={onImportSnapshot}
-    />,
-  );
+  render(<CurrentCodexSessionCard {...createCardProps(createSummary("ready"))} />);
 
   await user.click(screen.getByRole("button", { name: /refresh session/i }));
   await user.click(screen.getByRole("button", { name: /save snapshot/i }));
@@ -83,4 +68,24 @@ it("wires refresh, save snapshot, and import snapshot actions", async () => {
   expect(onRefresh).toHaveBeenCalledTimes(1);
   expect(onSaveSnapshot).toHaveBeenCalledTimes(1);
   expect(onImportSnapshot).toHaveBeenCalledTimes(1);
+});
+
+it("collapses session panel body and supports expand toggle", async () => {
+  const user = userEvent.setup();
+  const onToggleCollapsed = vi.fn();
+
+  render(
+    <CurrentCodexSessionCard
+      {...createCardProps(createSummary("ready"), {
+        isCollapsed: true,
+        onToggleCollapsed,
+      })}
+    />,
+  );
+
+  expect(screen.queryByRole("button", { name: /refresh session/i })).not.toBeInTheDocument();
+  expect(screen.queryByText(/session actions/i)).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: /expand current session panel/i }));
+  expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
 });
