@@ -15,6 +15,7 @@
 - **Usage Monitoring** – View real-time usage for both 5-hour and weekly limits
 - **Drag Reordering** – Reorder account cards by drag handle; order persists locally across sessions
 - **Full/Compact Views** – Toggle account cards between full management layout and compact scan layout with inline refresh + reorder controls; preference persists locally
+- **Random Theme Palette Inspector** – Click `(!)` on the Random theme control to open a palette modal and copy the currently active app color tokens
 - **Dual Login Mode** – OAuth authentication or import existing `auth.json` files
 - **Current Session Card** – Refresh current `~/.codex/auth.json` metadata and save snapshots
 - **Snapshot Import Flow** – Import from `~/.codex-switcher/snapshots/` with picker default path

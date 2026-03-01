@@ -18,6 +18,7 @@ interface WorkbenchHeaderProps {
   themePreference: ThemePreference;
   onRefreshUsage: () => void;
   onOpenAddAccount: () => void;
+  onOpenThemePalette: () => void;
   onToggleCardDensityMode: () => void;
   onThemeChange: (value: ThemePreference) => void;
 }
@@ -58,6 +59,7 @@ export function WorkbenchHeader({
   themePreference,
   onRefreshUsage,
   onOpenAddAccount,
+  onOpenThemePalette,
   onToggleCardDensityMode,
   onThemeChange,
 }: WorkbenchHeaderProps) {
@@ -117,7 +119,11 @@ export function WorkbenchHeader({
                 </Button>
               </div>
 
-              <ThemeToggle value={themePreference} onChange={onThemeChange} />
+              <ThemeToggle
+                value={themePreference}
+                onChange={onThemeChange}
+                onRandomInfoClick={onOpenThemePalette}
+              />
 
               <dl className="grid grid-cols-2 gap-2 pt-1">
                 <div className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-2 sm:px-3.5 sm:py-2.5 shadow-[var(--shadow-soft)]">

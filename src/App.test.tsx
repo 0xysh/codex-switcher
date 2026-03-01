@@ -201,8 +201,40 @@ it("renders control rail as three top actions and three theme options", async ()
   expect(scoped.getByRole("radio", { name: /light/i })).toBeInTheDocument();
   expect(scoped.getByRole("radio", { name: /dark/i })).toBeInTheDocument();
   expect(scoped.getByRole("radio", { name: /random/i })).toBeInTheDocument();
+  expect(
+    scoped.getByRole("button", { name: /show random palette details/i })
+  ).toBeInTheDocument();
   expect(scoped.getByText(/accounts tracked/i)).toBeInTheDocument();
   expect(scoped.getByText(/blocking pids/i)).toBeInTheDocument();
+});
+
+it("opens palette modal from random info action and copies active palette", async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn(async () => undefined);
+
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText },
+  });
+
+  render(<App />);
+
+  await user.click(
+    await screen.findByRole("button", { name: /show random palette details/i })
+  );
+
+  expect(
+    await screen.findByRole("dialog", { name: /current theme palette/i })
+  ).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: /copy palette/i }));
+
+  expect(writeText).toHaveBeenCalledWith(
+    expect.stringContaining("--accent-primary")
+  );
+  expect(
+    screen.getByRole("status", { name: /theme palette status/i })
+  ).toHaveTextContent(/palette copied/i);
 });
 
 it("toggles compact/full button label when density mode changes", async () => {

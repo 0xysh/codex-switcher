@@ -48,6 +48,16 @@ export function IconAlertTriangle(props: IconProps) {
   );
 }
 
+export function IconInfoCircle(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 10v6" />
+      <path d="M12 7h.01" />
+    </BaseIcon>
+  );
+}
+
 export function IconRefresh(props: IconProps) {
   return (
     <BaseIcon {...props}>

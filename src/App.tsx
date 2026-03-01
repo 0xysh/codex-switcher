@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { AddAccountModal } from "./components";
+import { AddAccountModal, ThemePaletteModal } from "./components";
 import { IconCheck, LiveRegion } from "./components/ui";
 import {
   AccountWorkspaceContent,
@@ -60,6 +60,7 @@ function App() {
   const { activity, pushActivity } = useActivityFeed();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isThemePaletteModalOpen, setIsThemePaletteModalOpen] = useState(false);
   const [filePickerDefaultPath, setFilePickerDefaultPath] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -235,6 +236,9 @@ function App() {
           void handleRefresh();
         }}
         onOpenAddAccount={openAddAccountModal}
+        onOpenThemePalette={() => {
+          setIsThemePaletteModalOpen(true);
+        }}
         onToggleCardDensityMode={toggleCardDensityMode}
         onThemeChange={setThemePreference}
       />
@@ -297,6 +301,13 @@ function App() {
         onStartOAuth={startOAuthLogin}
         onCompleteOAuth={completeOAuthLogin}
         onCancelOAuth={cancelOAuthLogin}
+      />
+
+      <ThemePaletteModal
+        isOpen={isThemePaletteModalOpen}
+        onClose={() => {
+          setIsThemePaletteModalOpen(false);
+        }}
       />
 
       <LiveRegion label="Global Announcements" message={announcement} />

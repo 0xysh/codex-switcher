@@ -2,194 +2,157 @@
 
 Operational guide for coding agents working in this repository.
 
-Scope: whole repository unless a deeper AGENTS.md is added later.
+Scope: repository-wide unless a deeper `AGENTS.md` overrides this file.
 
-## Project Overview
+## Project Snapshot
 
-- Stack: Tauri v2 + Rust backend + React 19 + TypeScript + Vite + Tailwind CSS v4.
-- Purpose: inspect Codex account usage, manage account imports/reconnects, and maintain active `~/.codex/auth.json` context.
-- Frontend talks to backend through Tauri `invoke` commands.
-- Backend stores account metadata in `~/.codex-switcher/accounts.json`.
-- Credentials are stored locally in `~/.codex-switcher/accounts.json`.
-- Session snapshots are stored in `~/.codex-switcher/snapshots/`.
-- Import defaults: generic Add Account import opens in `~/.codex` (when current session metadata is available), while Current Session `Import Snapshot` opens in `~/.codex-switcher/snapshots/`.
+- Stack: Tauri v2, Rust backend, React 19, TypeScript, Vite, Tailwind CSS v4.
+- Product: local Codex account/usage manager with snapshot import + reconnect flows.
+- Frontend/backend boundary: Tauri `invoke` commands in `src-tauri/src/commands/*`.
+- Sensitive local files:
+  - `~/.codex-switcher/accounts.json`
+  - `~/.codex-switcher/snapshots/*.json`
+  - `~/.codex/auth.json` (current session source)
+
+## Rule Precedence (Cursor/Copilot)
+
+- `.cursorrules`: not present.
+- `.cursor/rules/`: not present.
+- `.github/copilot-instructions.md`: not present.
+- If any of the files above are added later, treat them as higher-priority instructions.
 
 ## Repository Map
 
-- `src/`: React frontend.
-- `src/features/`: feature-scoped selectors/hooks/section components.
-- `src/components/`: UI components.
-- `src/hooks/`: stateful hooks and Tauri interaction wrappers.
-- `src/types/`: frontend types matching Rust serde payloads.
-- `src-tauri/src/`: Rust backend.
-- `src-tauri/src/commands/`: Tauri command handlers (frontend boundary).
-- `src-tauri/src/auth/`: account storage, switching, and OAuth logic.
-- `src-tauri/src/api/`: remote usage API client code.
-- `.github/workflows/build.yml`: CI/release pipeline reference.
-- `docs/README.md`: documentation index and update policy.
-- `docs/engineering-standards.md`: architecture and maintainability standards.
+- `src/App.tsx`: composition root and global overlays.
+- `src/features/workbench/`: feature selectors/hooks/section components.
+- `src/components/`: shared domain components.
+- `src/components/ui/`: primitive UI controls/icons.
+- `src/hooks/`: reusable stateful logic + Tauri orchestration hooks.
+- `src/types/`: TS payload contracts matching Rust serde payloads.
+- `src-tauri/src/commands/`: thin command boundary.
+- `src-tauri/src/auth/`: local storage, switching, OAuth flow.
+- `src-tauri/src/api/`: usage API clients.
+- `docs/engineering-standards.md`: complexity + architecture budgets.
+- `docs/ui-ux-architecture.md`: frontend ownership and UI contract.
 
-## Cursor / Copilot Rules
+## Setup and Development Commands
 
-- No `.cursorrules` file exists.
-- No `.cursor/rules/` directory exists.
-- No `.github/copilot-instructions.md` file exists.
-- If any of these are added later, treat them as higher-priority repo rules.
-- Keep this file aligned with new rule files when they appear.
-
-## Setup Commands
-
-- Install JS deps: `pnpm install`
-- Run frontend only: `pnpm dev`
-- Run Tauri app (dev): `pnpm tauri dev`
-- Build frontend: `pnpm build`
-- Build Tauri bundles: `pnpm tauri build`
+- Install dependencies: `pnpm install`
+- Frontend dev server: `pnpm dev`
+- Tauri dev app: `pnpm tauri dev`
+- Frontend production build: `pnpm build`
+- Tauri production build: `pnpm tauri build`
+- App-only bundle: `pnpm tauri build --bundles app`
 
 Notes:
 
-- `pnpm tauri ...` goes through `scripts/tauri.sh` to ensure `cargo` is available.
-- CI uses Node 20 and Rust stable.
-- On Ubuntu, building requires `libwebkit2gtk-4.1-dev` and related packages.
+- Use `pnpm` (not npm/yarn) to match lockfile and scripts.
+- `pnpm tauri ...` routes through `scripts/tauri.sh`.
 
-## Lint / Format / Static Analysis
+## Lint, Format, and Static Analysis
 
-There is no dedicated ESLint or Prettier config in this repo.
-Use the following checks before committing:
+No ESLint/Prettier config is committed. Use these quality commands:
 
 - TypeScript strict check: `pnpm exec tsc --noEmit`
-- Frontend build check: `pnpm build`
-- Frontend quality gate: `pnpm run check:ui`
+- UI gate (types + tests + build): `pnpm run check:ui`
 - Rust format check: `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
-- Rust formatter apply: `cargo fmt --manifest-path src-tauri/Cargo.toml`
+- Rust format apply: `cargo fmt --manifest-path src-tauri/Cargo.toml`
 - Rust compile check: `cargo check --manifest-path src-tauri/Cargo.toml`
-- Rust lint (if installed): `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
+- Rust clippy (if available): `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
 
-Security/dependency checks:
+## Test Commands (Including Single-Test Workflow)
 
-- JS deps audit: `pnpm audit`
-- JS prod deps audit: `pnpm audit --prod`
+Frontend (Vitest + Testing Library):
 
-## Test Commands
+- Run all tests: `pnpm test`
+- Watch mode: `pnpm test:watch`
+- Single test file (recommended): `pnpm exec vitest run src/App.test.tsx`
+- Two explicit files: `pnpm exec vitest run src/components/__tests__/AccountCard.test.tsx src/App.test.tsx`
+- Single test by name: `pnpm exec vitest run src/App.test.tsx -t "renders app title"`
 
-Current status:
-
-- Frontend test runner is configured with Vitest + Testing Library.
-- No Rust tests are currently present in the codebase.
-
-Frontend tests:
-
-- Run all frontend tests: `pnpm test`
-- Run frontend tests in watch mode: `pnpm test:watch`
-- Run a single frontend test file: `pnpm test -- src/components/__tests__/AccountCard.test.tsx`
-
-Still, use standard Rust commands when adding tests:
+Rust tests are present in the repo. Use:
 
 - Run all Rust tests: `cargo test --manifest-path src-tauri/Cargo.toml`
-- Run a single Rust test by name: `cargo test --manifest-path src-tauri/Cargo.toml test_name -- --exact --nocapture`
-- Run tests matching a module/prefix: `cargo test --manifest-path src-tauri/Cargo.toml oauth_server::`
+- Single Rust test by exact name: `cargo test --manifest-path src-tauri/Cargo.toml test_name -- --exact --nocapture`
+- Module/prefix filter: `cargo test --manifest-path src-tauri/Cargo.toml oauth_server::`
 
-Single-test guidance:
+## Required Validation Before Handoff
 
-- Prefer `-- --exact --nocapture` when targeting one named test.
-- Keep test names stable and descriptive to make filtering easy.
+Run this trio unless the user explicitly narrows scope:
 
-## TypeScript / React Style
+1. `pnpm exec tsc --noEmit`
+2. `pnpm test -- src/components/__tests__/AccountCard.test.tsx src/App.test.tsx`
+3. `pnpm tauri build --bundles app`
+
+If command 2 executes more tests than requested due Vitest resolution behavior, report it clearly.
+
+## TypeScript/React Code Style
 
 - Use functional components and hooks.
-- Keep components focused; move stateful logic into hooks when reusable.
-- Use explicit interfaces/types for props and domain models.
-- Avoid `any`; prefer narrow unions and `null`/`undefined` handling.
+- Keep `src/App.tsx` composition-focused; move feature logic into `src/features/*`.
+- Prefer explicit interfaces/types for props and domain data.
+- Avoid `any`; use unions, generics, and narrowing.
 - Use `import type` for type-only imports.
-- Maintain existing formatting style: double quotes, semicolons, 2-space indentation.
-- Keep Tailwind class usage consistent with existing utility-first approach.
+- Formatting: double quotes, semicolons, 2-space indentation.
+- Keep Tailwind class patterns consistent with existing tokens/utilities.
 
-## Frontend Scalability Standards
-
-- Treat `src/App.tsx` as composition root only. It should wire feature modules, not own large section markup and business rules.
-- Place feature-specific orchestration in `src/features/<feature>/` as:
-  - `selectors.ts` for pure derivations,
-  - `hooks/` for stateful/reusable behavior,
-  - `components/` for section UI.
-- Reuse shared behavior through hooks (for example dialog focus trap, hotkeys, filtering). Do not duplicate behavioral logic across components.
-- Follow complexity budgets from `docs/engineering-standards.md`:
-  - Component file target <= 220 lines, hard limit 320.
-  - Hook/selector file target <= 180 lines, hard limit 260.
-  - Function target <= 45 lines unless a clear justification is documented.
-- If a file exceeds a hard limit, refactor before adding more behavior.
-- Keep extraction refactors behavior-preserving and covered by tests.
-
-Import ordering convention:
+Import order:
 
 1. React/runtime imports.
 2. Third-party packages.
-3. Local modules.
-4. Side-effect imports (for example CSS) last.
+3. Local imports.
+4. Side-effect imports (CSS) last.
 
 Naming conventions:
 
-- Components/interfaces/types: PascalCase.
-- Variables/functions/hooks: camelCase.
-- Hook names must start with `use`.
-- Constants: UPPER_SNAKE_CASE only when truly constant/shared.
+- Components/types/interfaces: PascalCase.
+- Functions/variables/hooks: camelCase.
+- Hooks must start with `use`.
+- Constants: UPPER_SNAKE_CASE only for true constants.
 
-Frontend error handling:
+## Frontend Architecture and Complexity Budgets
+
+- Follow `docs/engineering-standards.md` budgets:
+  - Component target <= 220 lines; hard limit 320.
+  - Hook/selector target <= 180 lines; hard limit 260.
+  - Function target <= 45 lines unless justified.
+- If a file exceeds a hard limit, refactor before adding behavior.
+- Reuse shared hooks (focus traps, keyboard handling, filtering) instead of duplicating logic.
+
+## Error Handling and Logging
 
 - Catch async UI errors at interaction boundaries.
-- Show actionable user-facing messages where appropriate.
-- Keep `console.error` for diagnostics, but avoid secret/token data.
+- Surface actionable messages in UI/live regions when appropriate.
+- Keep diagnostic `console.error`, but never log secrets/tokens/raw auth payloads.
+- In Rust internals, return `anyhow::Result<T>` with `context/with_context`.
+- At command boundary, map errors to `Result<_, String>` via `.map_err(|e| e.to_string())`.
 
-## Rust / Tauri Style
+## Rust/Tauri Contract Rules
 
-- Keep Tauri boundary in `src-tauri/src/commands/*` thin.
-- Internal modules should return `anyhow::Result<T>` with rich context.
-- Tauri command functions should return `Result<_, String>`.
-- Convert internal errors at command boundary via `.map_err(|e| e.to_string())`.
-- Add context using `context` / `with_context` for IO/network operations.
-- Prefer small, focused helper functions over monolithic command handlers.
-- Maintain rustfmt defaults; do not hand-format against rustfmt.
-
-Rust naming conventions:
-
-- Modules/functions/variables: snake_case.
-- Structs/enums/traits: PascalCase.
-- Constants: UPPER_SNAKE_CASE.
-
-Backend API contract rules:
-
-- Preserve serde field naming expected by frontend (`snake_case` payloads).
-- If backend payload shape changes, update `src/types/index.ts` in same change.
-- Keep frontend `invoke` command names in sync with `#[tauri::command]` exports.
+- Keep command handlers thin in `src-tauri/src/commands/*`.
+- Prefer small helpers over monolithic command functions.
+- Preserve serde `snake_case` payload fields expected by frontend.
+- When Rust payload shapes change, update `src/types/index.ts` in the same change.
+- Keep invoke command names synchronized across Rust and frontend callers.
 
 ## Security Requirements
 
-- Never store credentials in repository files.
-- Store runtime credentials only in local user config (`~/.codex-switcher/accounts.json`).
-- Treat `~/.codex-switcher/snapshots/*.json` as sensitive credential files with restrictive permissions.
-- Preserve restrictive file permissions logic for local credential files.
-- Never log tokens, API keys, refresh tokens, or full auth JSON contents.
-- Keep restrictive CSP in `src-tauri/tauri.conf.json`; do not loosen without justification.
-- Preserve restrictive file permissions logic for sensitive local files.
+- Never commit credentials, tokens, or auth snapshots.
+- Preserve restrictive permission logic for local sensitive files.
+- Do not relax CSP in `src-tauri/tauri.conf.json` without explicit justification.
+- Review logs for token leakage risk when touching auth/API code.
 
-## Change and Review Expectations
+## Docs and Change Management
 
-- Make minimal, scoped changes that follow existing module boundaries.
-- Update docs when behavior, commands, security posture, or architecture rules change.
-- Run relevant checks locally before handing off.
-- Include exact commands run and outcomes in your handoff summary.
-- Follow existing commit style (conventional prefix like `fix:`, `feat:`, `chore:`).
-
-## Documentation Governance
-
-- Use `docs/README.md` as the canonical docs index.
 - Keep `AGENTS.md`, `docs/ui-ux-architecture.md`, and `docs/engineering-standards.md` aligned.
-- When introducing a new persistent workflow or architectural rule, update all affected docs in the same change.
-- Prefer short, enforceable rules over broad guidance; include exact paths and commands whenever possible.
+- Update docs with behavior, command, architecture, or security changes.
+- Prefer minimal, scoped diffs; avoid unrelated refactors.
+- Use conventional commit style (`feat:`, `fix:`, `chore:`) when committing.
 
 ## Agent Handoff Checklist
 
-- Code builds (`pnpm build` and/or `cargo check`) for touched areas.
-- Any new command is documented here and/or in `README.md`.
-- Architecture-impacting changes are documented in `docs/engineering-standards.md` and `docs/ui-ux-architecture.md`.
-- Type changes are mirrored across Rust and TypeScript boundaries.
-- Security-sensitive paths were reviewed for token leakage.
-- No unrelated refactors or formatting churn in untouched modules.
+- Relevant checks/tests were run and results are reported.
+- Type/contract changes are mirrored across Rust and TypeScript.
+- Security-sensitive paths were reviewed for secret leakage.
+- Docs were updated if persistent behavior/rules changed.
+- No unrelated formatting churn was introduced.

@@ -20,6 +20,7 @@ Do not move command/business logic into presentational components.
 
 - Workbench layout is usage-first: header, account workspace, current session card, and recent activity.
 - Header Control Rail uses a stable 3x2 interaction surface: Refresh Usage, Add Account, Full/Compact toggle, then Light/Dark/Random theme controls, followed by compact status tiles for Accounts Tracked and Blocking PIDs.
+- Random theme control includes an inline `(!)` inspector trigger that opens a modal with the currently active color token set and a one-click copy action.
 - `CurrentCodexSessionCard` is the only UI entry point for auth.json session refresh/snapshot actions.
 - Account cards are uniform; no active-account special layout and no switch CTA surface.
 - Account cards support drag-handle reordering when multiple accounts exist; order is persisted in local account storage.
